@@ -5,9 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite --port=3000 --host=0.0.0.0",
-    "prebuild": "node -e \"['public/_redirects','dist/_redirects','_redirects'].forEach(f=>{try{require('fs').unlinkSync(f)}catch(e){}})\"",
-    "build": "vite build",
-    "postbuild": "node -e \"['dist/_redirects','public/_redirects','_redirects'].forEach(f=>{try{require('fs').unlinkSync(f)}catch(e){}})\"",
+    "build": "node -e \"const fs=require('fs');['_redirects','public/_redirects','dist/_redirects'].forEach(f=>{try{fs.unlinkSync(f)}catch(e){}})\" && vite build && node -e \"const fs=require('fs');['_redirects','public/_redirects','dist/_redirects'].forEach(f=>{try{fs.unlinkSync(f)}catch(e){}})\"",
     "preview": "vite preview",
     "clean": "rm -rf dist",
     "lint": "tsc --noEmit"
