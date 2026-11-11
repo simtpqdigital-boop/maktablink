@@ -110,7 +110,7 @@ export const RaportView: React.FC<RaportViewProps> = ({
       });
 
     msg += `%0A------------------------------------------%0A`;
-    msg += `_Dikirim otomatis via SantriLinkPage App_`;
+    msg += `_Dikirim otomatis via MaktabLink App_`;
 
     window.open(`https://api.whatsapp.com/send?phone=${formattedPhone}&text=${msg}`, '_blank');
   };
@@ -184,7 +184,7 @@ export const RaportView: React.FC<RaportViewProps> = ({
                 Laporan Perkembangan
               </h2>
               <p className="text-[9px] text-emerald-600 font-bold tracking-widest uppercase mt-1">
-                SantriLinkPage Digital Transparansi
+                MaktabLink Digital Transparansi
               </p>
             </div>
 

@@ -1,6 +1,6 @@
 {
-  "name": "SantriLinkPage",
-  "description": "Aplikasi Frontend Platform Informasi Santri Berbasis Link (SantriLinkPage) yang terhubung langsung dengan Google Apps Script Web App.",
+  "name": "MaktabLink",
+  "description": "Aplikasi Frontend Platform Informasi Santri Berbasis Link (MaktabLink) yang terhubung langsung dengan Google Apps Script Web App.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

@@ -17,10 +17,10 @@ export const Header: React.FC<HeaderProps> = ({ user, onLogout, onRefresh, isSyn
     <header className="px-4 pb-3 pt-[max(12px,env(safe-area-inset-top))] bg-white/95 backdrop-blur-md border-b border-slate-100 shadow-xs z-40 shrink-0">
       <div className="flex justify-between items-center">
         <div className="flex items-center space-x-2.5">
-          <div className="w-9 h-9 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-700 p-1 shadow-md shadow-emerald-500/20 flex items-center justify-center shrink-0">
+          <div className="w-9 h-9 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-700 p-0.5 shadow-md shadow-emerald-500/20 flex items-center justify-center shrink-0 overflow-hidden">
             <img
-              src="https://iili.io/f7vctZN.png"
-              alt="SantriLinkPage Logo"
+              src="/maktablink-icon.svg"
+              alt="MaktabLink Logo"
               className="w-full h-full object-contain filter drop-shadow-xs"
             />
           </div>

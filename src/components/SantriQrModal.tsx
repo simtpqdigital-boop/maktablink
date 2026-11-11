@@ -104,7 +104,7 @@ export const SantriQrModal: React.FC<SantriQrModalProps> = ({ santri, isOpen, on
           {/* Card Top Brand */}
           <div className="flex items-center justify-center space-x-1.5 mb-2">
             <span className="text-[9px] font-black text-emerald-400 uppercase tracking-widest font-['Outfit']">
-              SantriLinkPage ID Card
+              MaktabLink ID Card
             </span>
           </div>
 

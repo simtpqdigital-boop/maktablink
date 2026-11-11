@@ -1,4 +1,4 @@
-const CACHE_NAME = 'santrilink-pwa-v2';
+const CACHE_NAME = 'maktablink-pwa-v1';
 
 self.addEventListener('install', (event) => {
   self.skipWaiting();

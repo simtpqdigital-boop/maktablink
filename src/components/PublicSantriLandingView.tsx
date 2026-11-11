@@ -49,16 +49,16 @@ export const PublicSantriLandingView: React.FC<PublicSantriLandingViewProps> = (
   if (isLoadingData) {
     return (
       <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col items-center justify-center p-6 text-center">
-        <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-700 p-2 shadow-xl shadow-emerald-500/20 flex items-center justify-center animate-bounce mb-4">
+        <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-700 p-1 shadow-xl shadow-emerald-500/20 flex items-center justify-center animate-bounce mb-4 overflow-hidden">
           <img
-            src="https://iili.io/f7vctZN.png"
-            alt="SantriLinkPage Logo"
+            src="/maktablink-icon.svg"
+            alt="MaktabLink Logo"
             className="w-full h-full object-contain filter drop-shadow"
           />
         </div>
         <h2 className="text-base font-black font-['Outfit'] text-slate-900">Memuat Laporan Santri...</h2>
         <p className="text-xs text-slate-500 mt-1 max-w-sm font-medium">
-          Mengambil data resmi santri dari platform SantriLinkPage...
+          Mengambil data resmi santri dari platform MaktabLink...
         </p>
       </div>
     );
@@ -589,7 +589,7 @@ export const PublicSantriLandingView: React.FC<PublicSantriLandingViewProps> = (
 
         {/* BOTTOM BRAND FOOTER */}
         <footer className="p-4 border-t border-slate-200 text-center text-slate-500 text-[10px] bg-white">
-          <p className="font-bold">Laporan Resmi Diterbitkan Oleh Platform SantriLinkPage</p>
+          <p className="font-bold">Laporan Resmi Diterbitkan Oleh Platform MaktabLink</p>
         </footer>
       </div>
     </div>

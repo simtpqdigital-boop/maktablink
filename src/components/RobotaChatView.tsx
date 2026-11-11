@@ -38,7 +38,7 @@ export const RobotaChatView: React.FC<RobotaChatViewProps> = ({ data, onExit }) 
     const welcomeMsg: ChatMessage = {
       id: 'welcome-1',
       sender: 'bot',
-      text: "Assalamu'alaikum! 👋 Saya **SantriBot**, asisten pintar SantriLinkPage.\n\nSilakan ketik **Nama Lengkap** atau **NIS Santri** pada kolom di bawah untuk melihat rincian laporan santri.",
+      text: "Assalamu'alaikum! 👋 Saya **MaktabBot**, asisten pintar MaktabLink.\n\nSilakan ketik **Nama Lengkap** atau **NIS Santri** pada kolom di bawah untuk melihat rincian laporan santri.",
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     };
     setMessages([welcomeMsg]);
@@ -154,7 +154,7 @@ export const RobotaChatView: React.FC<RobotaChatViewProps> = ({ data, onExit }) 
                 {
                   id: 'reset-1',
                   sender: 'bot',
-                  text: "Assalamu'alaikum! 👋 Saya **SantriBot**, asisten pintar SantriLinkPage.\n\nSilakan ketik **Nama Lengkap** atau **NIS Santri** pada kolom di bawah untuk melihat rincian laporan santri.",
+                  text: "Assalamu'alaikum! 👋 Saya **MaktabBot**, asisten pintar MaktabLink.\n\nSilakan ketik **Nama Lengkap** atau **NIS Santri** pada kolom di bawah untuk melihat rincian laporan santri.",
                   timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
                 }
               ]);

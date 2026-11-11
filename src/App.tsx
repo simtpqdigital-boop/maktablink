@@ -239,7 +239,7 @@ export default function App() {
 
   // Logout handler
   const handleLogout = () => {
-    showModal('confirm', 'Anda yakin ingin keluar dari sistem SantriLink?', () => {
+    showModal('confirm', 'Anda yakin ingin keluar dari sistem MaktabLink?', () => {
       setCurrentUser(null);
       setAppData({
         santri: [],
@@ -787,10 +787,10 @@ export default function App() {
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-[9999] flex flex-col items-center justify-center p-4 transition-opacity animate-in fade-in">
           <div className="bg-white px-8 py-7 rounded-[2rem] flex flex-col items-center shadow-2xl border border-slate-100 max-w-xs w-full text-center">
             <div className="relative mb-3 flex items-center justify-center">
-              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-700 p-2 shadow-lg shadow-emerald-500/30 flex items-center justify-center animate-bounce">
+              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-700 p-1 shadow-lg shadow-emerald-500/30 flex items-center justify-center animate-bounce overflow-hidden">
                 <img
-                  src="https://iili.io/f7vctZN.png"
-                  alt="SantriLink Logo"
+                  src="/maktablink-icon.svg"
+                  alt="MaktabLink Logo"
                   className="w-full h-full object-contain filter drop-shadow"
                 />
               </div>

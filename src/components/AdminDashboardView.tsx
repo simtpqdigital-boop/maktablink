@@ -111,7 +111,7 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
       <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-emerald-950 p-6 rounded-[2rem] text-white shadow-xl relative overflow-hidden border border-slate-800">
         <div className="relative z-10">
           <p className="text-[10px] font-black text-emerald-400 uppercase tracking-widest mb-1 font-['Outfit']">
-            🌟 Overview Platform SantriLinkPage
+            🌟 Overview Platform MaktabLink
           </p>
           <h3 className="text-2xl font-black tracking-tight font-['Outfit']">
             {isAdmin ? 'Dashboard Lembaga (Admin)' : 'Dashboard Pengajar (Ustaz)'}

@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#10b981"/>
+      <stop offset="50%" stop-color="#059669"/>
+      <stop offset="100%" stop-color="#064e3b"/>
+    </linearGradient>
+    <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fef08a"/>
+      <stop offset="50%" stop-color="#facc15"/>
+      <stop offset="100%" stop-color="#ca8a04"/>
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="12" stdDeviation="16" flood-color="#022c22" flood-opacity="0.35"/>
+    </filter>
+  </defs>
+
+  <!-- App Icon Background -->
+  <rect width="512" height="512" rx="128" fill="url(#bgGrad)"/>
+  
+  <!-- Subtle inner border -->
+  <rect x="12" y="12" width="488" height="488" rx="116" fill="none" stroke="#ffffff" stroke-opacity="0.15" stroke-width="4"/>
+
+  <!-- Main MaktabLink Emblem -->
+  <g filter="url(#shadow)">
+    <!-- Open Book / Rehal Shape (Maktab) -->
+    <path d="M 256 220 
+             C 210 180, 140 182, 100 196 
+             C 90 200, 84 210, 84 220 
+             L 84 340 
+             C 84 352, 96 362, 108 358 
+             C 144 346, 206 344, 256 376 
+             C 306 344, 368 346, 404 358 
+             C 416 362, 428 352, 428 340 
+             L 428 220 
+             C 428 210, 422 200, 412 196 
+             C 372 182, 302 180, 256 220 Z" 
+          fill="#ffffff" fill-opacity="0.96"/>
+
+    <!-- Spine Divider Line -->
+    <path d="M 256 226 L 256 372" stroke="#059669" stroke-width="6" stroke-linecap="round"/>
+
+    <!-- Link Ring & Node Icon (representing 'Link') -->
+    <circle cx="256" cy="136" r="38" fill="url(#goldGrad)" filter="url(#shadow)"/>
+    <circle cx="256" cy="136" r="18" fill="#064e3b"/>
+
+    <!-- Connection Rays from Link Node to Maktab Book -->
+    <path d="M 228 156 L 176 196" stroke="url(#goldGrad)" stroke-width="8" stroke-linecap="round"/>
+    <path d="M 284 156 L 336 196" stroke="url(#goldGrad)" stroke-width="8" stroke-linecap="round"/>
+    
+    <!-- Pulse nodes -->
+    <circle cx="176" cy="196" r="10" fill="#facc15"/>
+    <circle cx="336" cy="196" r="10" fill="#facc15"/>
+  </g>
+
+  <!-- Islamic Geometric Star Accent at Bottom -->
+  <g transform="translate(256, 420) scale(0.85)">
+    <polygon points="0,-16 4,-4 16,0 4,4 0,16 -4,4 -16,0 -4,-4" fill="#facc15"/>
+  </g>
+</svg>

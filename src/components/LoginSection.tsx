@@ -61,19 +61,16 @@ export const LoginSection: React.FC<LoginSectionProps> = ({ onLogin }) => {
     <section className="p-5 md:p-8 pt-[max(1.5rem,env(safe-area-inset-top))] pb-[max(1.5rem,env(safe-area-inset-bottom))] flex-1 flex flex-col justify-center overflow-y-auto max-w-md mx-auto w-full bg-gradient-to-b from-slate-50 via-white to-emerald-50/20">
       <div className="text-center mb-6">
         <div className="mb-3 flex justify-center">
-          <div className="relative p-2.5 bg-gradient-to-br from-emerald-500 to-teal-700 rounded-[2.5rem] shadow-xl shadow-emerald-500/20 border-4 border-white flex items-center justify-center">
+          <div className="relative p-1 bg-gradient-to-br from-emerald-500 to-teal-700 rounded-[2.5rem] shadow-xl shadow-emerald-500/20 border-4 border-white flex items-center justify-center overflow-hidden">
             <img
-              src="https://iili.io/f7vctZN.png"
-              alt="SantriLinkPage Logo"
-              className="h-14 md:h-16 w-auto object-contain filter drop-shadow"
-              onError={(e) => {
-                (e.target as HTMLElement).style.display = 'none';
-              }}
+              src="/maktablink-icon.svg"
+              alt="MaktabLink Logo"
+              className="h-16 w-16 object-contain filter drop-shadow"
             />
           </div>
         </div>
         <h1 className="text-3xl font-black text-slate-900 tracking-tight font-['Outfit']">
-          Santri<span className="text-emerald-600">LinkPage</span>
+          Maktab<span className="text-emerald-600">Link</span>
         </h1>
         <p className="text-slate-500 text-[11px] mt-1 font-bold uppercase tracking-widest">
           Platform informasi santri berbasis link
@@ -129,7 +126,7 @@ export const LoginSection: React.FC<LoginSectionProps> = ({ onLogin }) => {
             </>
           ) : (
             <>
-              <span>Masuk Sistem SantriLinkPage</span>
+              <span>Masuk Sistem MaktabLink</span>
               <ArrowRight className="w-4 h-4" />
             </>
           )}
@@ -144,7 +141,7 @@ export const LoginSection: React.FC<LoginSectionProps> = ({ onLogin }) => {
               className="w-full py-3 px-4 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 rounded-2xl text-xs font-extrabold border border-emerald-200/80 transition-all flex items-center justify-center space-x-2 active:scale-98 shadow-xs"
             >
               <Download className="w-4 h-4 text-emerald-600 animate-bounce" />
-              <span>Instal Aplikasi SantriLinkPage</span>
+              <span>Instal Aplikasi MaktabLink</span>
             </button>
 
             {showInstallGuide && (
@@ -155,7 +152,7 @@ export const LoginSection: React.FC<LoginSectionProps> = ({ onLogin }) => {
                 </div>
                 <p>1. Klik titik tiga (⋮) di pojok kanan atas browser Chrome.</p>
                 <p>2. Pilih menu <strong>"Tambahkan ke Layar Utama"</strong> atau <strong>"Instal Aplikasi"</strong>.</p>
-                <p>3. Aplikasi SantriLinkPage akan terpasang di layar HP seperti aplikasi Android/iOS resmi.</p>
+                <p>3. Aplikasi MaktabLink akan terpasang di layar HP seperti aplikasi Android/iOS resmi.</p>
               </div>
             )}
           </div>

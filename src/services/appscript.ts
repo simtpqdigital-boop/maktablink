@@ -339,7 +339,7 @@ export const UNIFIED_APPSCRIPT_CODE = `/**
  *    - Jenis: Aplikasi Web (Web App)
  *    - Jalankan sebagai: Saya (Me)
  *    - Siapa yang memiliki akses: Siapa saja (Anyone)
- * 6. Salin URL Aplikasi Web yang diberikan, lalu gunakan di aplikasi SantriLinkPage!
+ * 6. Salin URL Aplikasi Web yang diberikan, lalu gunakan di aplikasi MaktabLink!
  */
 
 function doPost(e) {
@@ -389,8 +389,8 @@ function doGet(e) {
   }
   return respondJSON({
     status: 'online',
-    app: 'SantriLinkPage Single AppScript Backend',
-    message: 'Backend siap digunakan. Hubungkan URL ini ke aplikasi SantriLinkPage.'
+    app: 'MaktabLink Single AppScript Backend',
+    message: 'Backend siap digunakan. Hubungkan URL ini ke aplikasi MaktabLink.'
   });
 }
 

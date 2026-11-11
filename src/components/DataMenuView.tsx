@@ -96,7 +96,7 @@ export const DataMenuView: React.FC<DataMenuViewProps> = ({
       `Bapak/Ibu dapat melihat rincian laporan Ananda secara lengkap melalui link berikut:\n` +
       `${url}\n\n` +
       `Atas perhatian dan kerjasamanya, kami ucapkan Jazakumullah Khairan Katsiran.\n\n` +
-      `— Pengurus Lembaga SantriLinkPage`;
+      `— Pengurus Lembaga MaktabLink`;
 
     const waUrl = formattedPhone
       ? `https://api.whatsapp.com/send?phone=${formattedPhone}&text=${encodeURIComponent(msg)}`
