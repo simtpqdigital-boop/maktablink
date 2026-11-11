@@ -11,6 +11,16 @@ export default defineConfig(() => {
       tailwindcss(),
       {
         name: 'purge-redirects',
+        buildStart() {
+          const pub = path.resolve(__dirname, 'public/_redirects');
+          if (fs.existsSync(pub)) {
+            try { fs.unlinkSync(pub); } catch (_) {}
+          }
+          const rootRedir = path.resolve(__dirname, '_redirects');
+          if (fs.existsSync(rootRedir)) {
+            try { fs.unlinkSync(rootRedir); } catch (_) {}
+          }
+        },
         closeBundle() {
           const p = path.resolve(__dirname, 'dist/_redirects');
           if (fs.existsSync(p)) {
