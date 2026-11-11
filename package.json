@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite --port=3000 --host=0.0.0.0",
-    "build": "vite build",
+    "build": "rm -f public/_redirects dist/_redirects _redirects 2>/dev/null || true; vite build; rm -f dist/_redirects public/_redirects 2>/dev/null || true",
     "preview": "vite preview",
     "clean": "rm -rf dist",
     "lint": "tsc --noEmit"
