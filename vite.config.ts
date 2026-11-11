@@ -2,7 +2,11 @@ import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import fs from 'fs';
 import path from 'path';
+import {fileURLToPath} from 'url';
 import {defineConfig} from 'vite';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 export default defineConfig(() => {
   return {
@@ -12,22 +16,30 @@ export default defineConfig(() => {
       {
         name: 'purge-redirects',
         buildStart() {
-          const pub = path.resolve(__dirname, 'public/_redirects');
-          if (fs.existsSync(pub)) {
-            try { fs.unlinkSync(pub); } catch (_) {}
-          }
-          const rootRedir = path.resolve(__dirname, '_redirects');
-          if (fs.existsSync(rootRedir)) {
-            try { fs.unlinkSync(rootRedir); } catch (_) {}
-          }
+          const targets = [
+            path.resolve(process.cwd(), 'public/_redirects'),
+            path.resolve(process.cwd(), '_redirects'),
+            path.resolve(__dirname, 'public/_redirects'),
+          ];
+          targets.forEach((p) => {
+            if (fs.existsSync(p)) {
+              try { fs.unlinkSync(p); } catch (_) {}
+            }
+          });
         },
         closeBundle() {
-          const p = path.resolve(__dirname, 'dist/_redirects');
-          if (fs.existsSync(p)) {
-            try { fs.unlinkSync(p); } catch (_) {}
-          }
-        }
-      }
+          const targets = [
+            path.resolve(process.cwd(), 'dist/_redirects'),
+            path.resolve(process.cwd(), 'public/_redirects'),
+            path.resolve(__dirname, 'dist/_redirects'),
+          ];
+          targets.forEach((p) => {
+            if (fs.existsSync(p)) {
+              try { fs.unlinkSync(p); } catch (_) {}
+            }
+          });
+        },
+      },
     ],
     resolve: {
       alias: {
@@ -37,10 +49,7 @@ export default defineConfig(() => {
     server: {
       host: '0.0.0.0',
       port: 3000,
-      // HMR is disabled in AI Studio via DISABLE_HMR env var.
-      // Do not modifyâfile watching is disabled to prevent flickering during agent edits.
       hmr: process.env.DISABLE_HMR !== 'true',
-      // Disable file watching when DISABLE_HMR is true to save CPU during agent edits.
       watch: process.env.DISABLE_HMR === 'true' ? null : {},
     },
   };
