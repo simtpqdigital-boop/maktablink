@@ -120,13 +120,26 @@ let writeQueuePromise: Promise<any> = Promise.resolve();
  * Universal Single AppScript Runner
  */
 export async function runServer<T = any>(method: string, args: any[] = []): Promise<T> {
+  const isWriteOperation = [
+    'submitEntry',
+    'updateEntry',
+    'deleteEntry',
+    'deleteMultipleEntries',
+    'clearCategoryData',
+  ].includes(method);
+  const isDeleteOperation = [
+    'deleteEntry',
+    'deleteMultipleEntries',
+    'clearCategoryData',
+  ].includes(method);
+
   const executeRequest = async (): Promise<T> => {
     const targetUrl = getAppScriptUrl();
 
     if (targetUrl && targetUrl.startsWith('http')) {
       try {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 25000);
+        const timeoutId = setTimeout(() => controller.abort(), 30000);
 
         const response = await fetch(targetUrl, {
           method: 'POST',
@@ -137,6 +150,7 @@ export async function runServer<T = any>(method: string, args: any[] = []): Prom
             method: method,
             action: method,
             args: args,
+            category: args[0],
             username: args[0],
             password: args[1],
           }),
@@ -150,14 +164,30 @@ export async function runServer<T = any>(method: string, args: any[] = []): Prom
           throw new Error(`HTTP error! status: ${response.status}`);
         }
 
-        const resData = await response.json();
+        const rawText = await response.text();
+        let resData: any;
+        try {
+          resData = JSON.parse(rawText);
+        } catch {
+          throw new Error(
+            'Respon Google Apps Script bukan JSON yang valid. Pastikan Web App sudah di-deploy ulang (New version) dengan akses "Anyone".'
+          );
+        }
         return resData as T;
-      } catch (err) {
+      } catch (err: any) {
+        if (isWriteOperation) {
+          // JANGAN pernah memalsukan sukses lewat mockDb untuk operasi tulis/hapus jika URL Apps Script aktif!
+          throw new Error(
+            err?.name === 'AbortError'
+              ? 'Koneksi ke Google Apps Script timeout (melebihi 30 detik). Periksa jaringan atau ulangi kembali.'
+              : err?.message || 'Gagal terhubung ke Google Apps Script.'
+          );
+        }
         console.warn(`AppScript fetch failed or timed out (${targetUrl}). Falling back to local handler:`, err);
       }
     }
 
-    // --- LOCAL FALLBACK (for offline / testing) ---
+    // --- LOCAL FALLBACK (hanya jika tidak ada URL Apps Script / mode offline baca) ---
     return new Promise<T>((resolve) => {
       setTimeout(() => {
         if (method === 'login') {
@@ -256,10 +286,26 @@ export async function runServer<T = any>(method: string, args: any[] = []): Prom
             mockDb[catName] = (mockDb[catName] as any[])?.filter((x) => x.row_index !== rIndex);
           }
           resolve({ success: true } as any);
+        } else if (method === 'deleteMultipleEntries') {
+          const catName = args[0] as CategoryKey;
+          const rowIndices: number[] = Array.isArray(args[1]) ? args[1] : [];
+          if (mockDb[catName]) {
+            const rowSet = new Set(rowIndices);
+            mockDb[catName] = (mockDb[catName] as any[])?.filter((x) => !rowSet.has(x.row_index));
+          }
+          resolve({ success: true, deletedCount: rowIndices.length } as any);
         } else if (method === 'clearCategoryData') {
           const catName = args[0] as CategoryKey;
           if (mockDb[catName]) {
-            mockDb[catName] = [];
+            if (catName === 'users') {
+              mockDb.users = (mockDb.users || []).filter(
+                (u: any) =>
+                  String(u.role || '').toLowerCase().trim() === 'admin' ||
+                  String(u.username || '').toLowerCase().trim() === 'admin'
+              );
+            } else {
+              mockDb[catName] = [];
+            }
           }
           resolve({ success: true, message: `Seluruh data ${catName} berhasil dibersihkan.` } as any);
         } else {
@@ -270,7 +316,6 @@ export async function runServer<T = any>(method: string, args: any[] = []): Prom
   };
 
   // Deduplication & sequential queue for write operations
-  const isWriteOperation = ['submitEntry', 'updateEntry', 'deleteEntry', 'clearCategoryData'].includes(method);
   let requestKey = '';
 
   if (isWriteOperation) {
@@ -280,9 +325,11 @@ export async function runServer<T = any>(method: string, args: any[] = []): Prom
       return inFlightRequests.get(requestKey)!;
     }
 
-    const recent = recentResultsCache.get(requestKey);
-    if (recent && Date.now() - recent.time < 4000) {
-      return recent.res as T;
+    if (!isDeleteOperation) {
+      const recent = recentResultsCache.get(requestKey);
+      if (recent && Date.now() - recent.time < 4000) {
+        return recent.res as T;
+      }
     }
 
     const prevQueue = writeQueuePromise;
@@ -295,7 +342,11 @@ export async function runServer<T = any>(method: string, args: any[] = []): Prom
         const promise = executeRequest();
         inFlightRequests.set(requestKey, promise);
         const res = await promise;
-        recentResultsCache.set(requestKey, { time: Date.now(), res });
+        if (isDeleteOperation) {
+          recentResultsCache.clear();
+        } else {
+          recentResultsCache.set(requestKey, { time: Date.now(), res });
+        }
         return res;
       } finally {
         inFlightRequests.delete(requestKey);
@@ -328,18 +379,17 @@ export async function runServer<T = any>(method: string, args: any[] = []): Prom
  */
 export const UNIFIED_APPSCRIPT_CODE = `/**
  * ============================================================================
- * SANTRILINKPAGE - SINGLE UNIFIED BACKEND (1 SPREADSHEET & 1 APPSCRIPT)
+ * MAKTABLINK - SINGLE UNIFIED BACKEND (1 SPREADSHEET & 1 APPSCRIPT)
  * ============================================================================
  * Panduan Singkat:
  * 1. Buka Google Spreadsheet Anda.
  * 2. Klik menu 'Ekstensi' > 'Apps Script'.
  * 3. Hapus semua kode yang ada, lalu Paste seluruh isi kode file ini.
  * 4. Jalankan fungsi 'setupData' sekali untuk membuat seluruh sheet otomatis.
- * 5. Klik 'Terapkan' (Deploy) > 'Penerapan baru' (New deployment).
- *    - Jenis: Aplikasi Web (Web App)
- *    - Jalankan sebagai: Saya (Me)
- *    - Siapa yang memiliki akses: Siapa saja (Anyone)
- * 6. Salin URL Aplikasi Web yang diberikan, lalu gunakan di aplikasi MaktabLink!
+ * 5. Klik 'Terapkan' (Deploy) > 'Kelola deployment' > Edit (ikon pensil) >
+ *    Pilih Versi: 'Versi baru' (New version) > 'Terapkan'.
+ *    (Jika baru pertama kali: 'Penerapan baru' > Jenis: Aplikasi Web >
+ *    Jalankan sebagai: Saya (Me) > Yang memiliki akses: Siapa saja (Anyone)).
  */
 
 function doPost(e) {
@@ -348,8 +398,9 @@ function doPost(e) {
     if (e && e.postData && e.postData.contents) {
       contents = JSON.parse(e.postData.contents);
     }
-    var method = contents.method || contents.action || (e && e.parameter && e.parameter.method);
-    var args = contents.args || [];
+    var params = (e && e.parameter) ? e.parameter : {};
+    var method = contents.method || contents.action || params.method || '';
+    var args = Array.isArray(contents.args) ? contents.args : [];
     var result;
 
     if (method === 'login') {
@@ -357,40 +408,46 @@ function doPost(e) {
     } else if (method === 'getAllData') {
       result = getAllData();
     } else if (method === 'getFormFields') {
-      result = getFormFields(args[0]);
+      result = getFormFields(args[0] || contents.category || params.category);
     } else if (method === 'submitEntry') {
-      result = submitEntry(args[0], args[1]);
+      result = submitEntry(args[0] || contents.category, args[1] || contents.payload);
     } else if (method === 'updateEntry') {
       result = updateEntry(args[0], args[1], args[2]);
     } else if (method === 'deleteEntry') {
       result = deleteEntry(args[0], args[1]);
+    } else if (method === 'deleteMultipleEntries') {
+      result = deleteMultipleEntries(args[0], args[1]);
     } else if (method === 'clearCategoryData') {
-      result = clearCategoryData(args[0]);
+      result = clearCategoryData(args[0] || contents.category || params.category);
     } else if (method === 'setupData') {
       result = setupData();
-    } else {
+    } else if (!method) {
       result = getAllData();
+    } else {
+      result = { success: false, message: 'Method tidak dikenali: ' + method };
     }
 
     return respondJSON(result);
   } catch (err) {
-    return respondJSON({ success: false, error: err.toString() });
+    return respondJSON({ success: false, error: err.toString(), message: err.toString() });
   }
 }
 
 function doGet(e) {
-  var method = e && e.parameter ? e.parameter.method : '';
+  var params = (e && e.parameter) ? e.parameter : {};
+  var method = params.method || '';
   if (method === 'getAllData') {
     return respondJSON(getAllData());
   } else if (method === 'getFormFields') {
-    return respondJSON(getFormFields(e.parameter.category));
+    return respondJSON(getFormFields(params.category));
   } else if (method === 'setupData') {
-    return respondJSON({ message: setupData() });
+    return respondJSON({ success: true, message: setupData() });
   } else if (method === 'clearCategoryData') {
-    return respondJSON(clearCategoryData(e.parameter.category));
+    return respondJSON(clearCategoryData(params.category));
   }
   return respondJSON({
     status: 'online',
+    version: '2.1',
     app: 'MaktabLink Single AppScript Backend',
     message: 'Backend siap digunakan. Hubungkan URL ini ke aplikasi MaktabLink.'
   });
@@ -424,7 +481,6 @@ function setupData() {
     }
     if (sheet.getLastRow() === 0) {
       sheet.appendRow(schema[sName]);
-      // Tambahkan akun default jika sheet users masih kosong
       if (sName === 'users') {
         sheet.appendRow(['admin', 'admin123', 'admin', 'Administrator', 'Aktif']);
         sheet.appendRow(['ustadz1', 'ustadz123', 'ustadz', 'Ustaz Abdullah', 'Aktif']);
@@ -432,7 +488,31 @@ function setupData() {
     }
   });
 
+  SpreadsheetApp.flush();
   return 'Setup Data 1 Spreadsheet Berhasil! Semua sheet dan akun siap digunakan.';
+}
+
+/**
+ * Normalisasi nama sheet ke kategori standar (kompatibel Rhino & V8)
+ */
+function cleanAlphaNum(str) {
+  return String(str || '').toLowerCase().trim().replace(/[^a-z0-9]/g, '');
+}
+
+function resolveCanonicalCategory(sheetName) {
+  var sClean = cleanAlphaNum(sheetName);
+  var standards = ['santri', 'absensi', 'progress', 'keuangan', 'informasi', 'program', 'mutabaah', 'users'];
+  if (standards.indexOf(sClean) !== -1) return sClean;
+
+  if (sClean.indexOf('progress') !== -1 || sClean.indexOf('progres') !== -1 || sClean.indexOf('hafalan') !== -1 || sClean.indexOf('capaian') !== -1) return 'progress';
+  if (sClean.indexOf('santri') !== -1 || sClean.indexOf('siswa') !== -1) return 'santri';
+  if (sClean.indexOf('absen') !== -1 || sClean.indexOf('presensi') !== -1 || sClean.indexOf('kehadiran') !== -1) return 'absensi';
+  if (sClean.indexOf('keuangan') !== -1 || sClean.indexOf('iuran') !== -1 || sClean.indexOf('spp') !== -1 || sClean.indexOf('syahriah') !== -1 || sClean.indexOf('kas') !== -1) return 'keuangan';
+  if (sClean.indexOf('informasi') !== -1 || sClean.indexOf('pengumuman') !== -1 || sClean.indexOf('info') !== -1 || sClean.indexOf('berita') !== -1) return 'informasi';
+  if (sClean.indexOf('program') !== -1 || sClean.indexOf('kelas') !== -1) return 'program';
+  if (sClean.indexOf('mutaba') !== -1 || sClean.indexOf('ibadah') !== -1 || sClean.indexOf('yaumiyah') !== -1) return 'mutabaah';
+  if (sClean.indexOf('user') !== -1 || sClean.indexOf('ustaz') !== -1 || sClean.indexOf('ustadz') !== -1 || sClean.indexOf('pengajar') !== -1 || sClean.indexOf('guru') !== -1 || sClean.indexOf('akun') !== -1) return 'users';
+  return '';
 }
 
 /**
@@ -440,10 +520,10 @@ function setupData() {
  */
 function handleLogin(username, password) {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var sheet = ss.getSheetByName('users');
+  var sheet = findTargetSheet(ss, 'users', true);
   if (!sheet) {
     setupData();
-    sheet = ss.getSheetByName('users');
+    sheet = findTargetSheet(ss, 'users', true);
   }
 
   var uInput = String(username || '').toLowerCase().trim();
@@ -454,7 +534,6 @@ function handleLogin(username, password) {
     return { success: false, message: "Sheet 'users' masih kosong. Tambahkan data akun di spreadsheet." };
   }
 
-  // Deteksi indeks kolom berdasarkan header
   var headers = data[0].map(function(h) { return String(h).toLowerCase().trim().replace(/\\s+/g, '_'); });
   var uCol = headers.indexOf('username');
   var pCol = headers.indexOf('password');
@@ -476,7 +555,6 @@ function handleLogin(username, password) {
     if (status.toLowerCase() === 'nonaktif') continue;
 
     if (uRow === uInput && pRow === pInput) {
-      // Tentukan role: jika tidak ada kolom role, username 'admin' = admin, lainnya = ustadz
       var role = 'ustadz';
       if (roleVal === 'admin' || uRow === 'admin') {
         role = 'admin';
@@ -517,13 +595,11 @@ function getAllData() {
     result[sKey] = [];
   });
 
-  sheets.forEach(function(sheet) {
-    var name = sheet.getName().toLowerCase().trim().replace(/\\s+/g, '_');
+  var exactMatchedKeys = {};
+
+  function readSheetRows(sheet) {
     var data = sheet.getDataRange().getValues();
-    if (data.length < 2) {
-      if (!result[name]) result[name] = [];
-      return;
-    }
+    if (data.length < 2) return [];
 
     var headers = data[0].map(function(h) {
       return String(h).trim().toLowerCase().replace(/\\s+/g, '_');
@@ -539,6 +615,7 @@ function getAllData() {
           val = Utilities.formatDate(val, ss.getSpreadsheetTimeZone(), 'yyyy-MM-dd');
         }
         var fieldKey = headers[j];
+        if (!fieldKey) continue;
         rowObj[fieldKey] = val !== undefined && val !== null ? String(val).trim() : '';
         if (rowObj[fieldKey] !== '') hasData = true;
       }
@@ -546,7 +623,28 @@ function getAllData() {
         rows.push(rowObj);
       }
     }
+    return rows;
+  }
+
+  // Pass 1: Sheet dengan nama persis sama
+  sheets.forEach(function(sheet) {
+    var name = sheet.getName().toLowerCase().trim().replace(/\\s+/g, '_');
+    var clean = cleanAlphaNum(sheet.getName());
+    var rows = readSheetRows(sheet);
     result[name] = rows;
+    if (standardSheets.indexOf(clean) !== -1) {
+      result[clean] = rows;
+      exactMatchedKeys[clean] = true;
+    }
+  });
+
+  // Pass 2: Sheet dengan nama alias (mis. 'Progres', 'Pengumuman', 'Data Ustaz') jika sheet exact belum ada
+  sheets.forEach(function(sheet) {
+    var canonical = resolveCanonicalCategory(sheet.getName());
+    if (canonical && !exactMatchedKeys[canonical]) {
+      result[canonical] = readSheetRows(sheet);
+      exactMatchedKeys[canonical] = true;
+    }
   });
 
   return result;
@@ -566,23 +664,33 @@ function getFormFields(category) {
   return fields[category] || [];
 }
 
-function findTargetSheet(ss, category) {
-  var catClean = String(category || '').toLowerCase().trim().replace(/[^a-z0-9]/g, '');
+function findTargetSheet(ss, category, createIfMissing) {
+  var catClean = cleanAlphaNum(category);
   var sheets = ss.getSheets();
 
+  // Pass 1: Prioritaskan kecocokan nama sheet persis
   for (var i = 0; i < sheets.length; i++) {
-    var sNameClean = sheets[i].getName().toLowerCase().trim().replace(/[^a-z0-9]/g, '');
+    var sNameClean = cleanAlphaNum(sheets[i].getName());
     if (sNameClean === catClean) return sheets[i];
-    if (catClean === 'progress' && (sNameClean.includes('progress') || sNameClean.includes('progres') || sNameClean.includes('hafalan') || sNameClean.includes('capaian'))) {
-      return sheets[i];
+  }
+
+  // Pass 2: Pencarian alias kata kunci (Rhino & V8 safe dengan indexOf)
+  for (var j = 0; j < sheets.length; j++) {
+    var sClean = cleanAlphaNum(sheets[j].getName());
+    if (catClean === 'progress' && (sClean.indexOf('progress') !== -1 || sClean.indexOf('progres') !== -1 || sClean.indexOf('hafalan') !== -1 || sClean.indexOf('capaian') !== -1)) {
+      return sheets[j];
     }
-    if (catClean === 'santri' && (sNameClean.includes('santri') || sNameClean.includes('siswa'))) return sheets[i];
-    if (catClean === 'absensi' && (sNameClean.includes('absen') || sNameClean.includes('presensi') || sNameClean.includes('kehadiran'))) return sheets[i];
-    if (catClean === 'keuangan' && (sNameClean.includes('keuangan') || sNameClean.includes('iuran') || sNameClean.includes('spp') || sNameClean.includes('syahriah') || sNameClean.includes('kas'))) return sheets[i];
-    if (catClean === 'informasi' && (sNameClean.includes('informasi') || sNameClean.includes('pengumuman') || sNameClean.includes('info') || sNameClean.includes('berita'))) return sheets[i];
-    if (catClean === 'program' && (sNameClean.includes('program') || sNameClean.includes('kelas'))) return sheets[i];
-    if (catClean === 'mutabaah' && (sNameClean.includes('mutaba') || sNameClean.includes('ibadah') || sNameClean.includes('yaumiyah'))) return sheets[i];
-    if (catClean === 'users' && (sNameClean.includes('user') || sNameClean.includes('ustaz') || sNameClean.includes('ustadz') || sNameClean.includes('pengajar') || sNameClean.includes('guru') || sNameClean.includes('akun'))) return sheets[i];
+    if (catClean === 'santri' && (sClean.indexOf('santri') !== -1 || sClean.indexOf('siswa') !== -1)) return sheets[j];
+    if (catClean === 'absensi' && (sClean.indexOf('absen') !== -1 || sClean.indexOf('presensi') !== -1 || sClean.indexOf('kehadiran') !== -1)) return sheets[j];
+    if (catClean === 'keuangan' && (sClean.indexOf('keuangan') !== -1 || sClean.indexOf('iuran') !== -1 || sClean.indexOf('spp') !== -1 || sClean.indexOf('syahriah') !== -1 || sClean.indexOf('kas') !== -1)) return sheets[j];
+    if (catClean === 'informasi' && (sClean.indexOf('informasi') !== -1 || sClean.indexOf('pengumuman') !== -1 || sClean.indexOf('info') !== -1 || sClean.indexOf('berita') !== -1)) return sheets[j];
+    if (catClean === 'program' && (sClean.indexOf('program') !== -1 || sClean.indexOf('kelas') !== -1)) return sheets[j];
+    if (catClean === 'mutabaah' && (sClean.indexOf('mutaba') !== -1 || sClean.indexOf('ibadah') !== -1 || sClean.indexOf('yaumiyah') !== -1)) return sheets[j];
+    if (catClean === 'users' && (sClean.indexOf('user') !== -1 || sClean.indexOf('ustaz') !== -1 || sClean.indexOf('ustadz') !== -1 || sClean.indexOf('pengajar') !== -1 || sClean.indexOf('guru') !== -1 || sClean.indexOf('akun') !== -1)) return sheets[j];
+  }
+
+  if (createIfMissing === false) {
+    return null;
   }
 
   var newSheet = ss.insertSheet(category);
@@ -596,9 +704,9 @@ function findTargetSheet(ss, category) {
 function getValueFromPayload(payload, header) {
   if (!payload) return '';
   if (payload[header] !== undefined) return payload[header];
-  var hClean = String(header).toLowerCase().replace(/[^a-z0-9]/g, '');
+  var hClean = cleanAlphaNum(header);
   for (var k in payload) {
-    var kClean = String(k).toLowerCase().replace(/[^a-z0-9]/g, '');
+    var kClean = cleanAlphaNum(k);
     if (kClean === hClean) return payload[k];
   }
   return '';
@@ -610,7 +718,7 @@ function submitEntry(category, payload) {
 
   try {
     var ss = SpreadsheetApp.getActiveSpreadsheet();
-    var sheet = findTargetSheet(ss, category);
+    var sheet = findTargetSheet(ss, category, true);
 
     var displayData = sheet.getDataRange().getDisplayValues();
     var headers = [];
@@ -636,6 +744,7 @@ function submitEntry(category, payload) {
                 sheet.getRange(u + 1, j + 1).setValue(payload[hKey]);
               }
             }
+            SpreadsheetApp.flush();
             return { success: true, message: "User " + newUsername + " sudah ada. Data akun diperbarui!" };
           }
         }
@@ -657,6 +766,7 @@ function submitEntry(category, payload) {
                 sheet.getRange(s + 1, k + 1).setValue(payload[kKey]);
               }
             }
+            SpreadsheetApp.flush();
             return { success: true, message: "Data santri diperbarui!" };
           }
         }
@@ -683,6 +793,7 @@ function submitEntry(category, payload) {
                 sheet.getRange(a + 1, m + 1).setValue(payload[mKey]);
               }
             }
+            SpreadsheetApp.flush();
             return { success: true, message: "Absensi santri tanggal " + aTgl + " berhasil diperbarui!" };
           }
         }
@@ -712,6 +823,7 @@ function submitEntry(category, payload) {
     }
 
     sheet.appendRow(newRow);
+    SpreadsheetApp.flush();
     return { success: true, message: "Data berhasil disimpan!" };
   } finally {
     try { lock.releaseLock(); } catch(e) {}
@@ -723,22 +835,46 @@ function updateEntry(category, rowIndex, payload) {
   try { lock.waitLock(15000); } catch(e) {}
   try {
     var ss = SpreadsheetApp.getActiveSpreadsheet();
-    var sheet = findTargetSheet(ss, category);
+    var sheet = findTargetSheet(ss, category, false);
     if (!sheet) return { success: false, message: "Sheet tidak ada" };
 
+    var rIdx = parseInt(rowIndex, 10);
     var displayData = sheet.getDataRange().getDisplayValues();
-    if (displayData.length < rowIndex) return { success: false, message: "Row index tidak valid" };
+    if (isNaN(rIdx) || rIdx < 2 || displayData.length < rIdx) {
+      return { success: false, message: "Row index tidak valid" };
+    }
 
     var headers = displayData[0].map(function(h) { return String(h).trim(); });
     for (var j = 0; j < headers.length; j++) {
       var key = headers[j];
-      if (payload[key] !== undefined) {
-        sheet.getRange(rowIndex, j + 1).setValue(payload[key]);
+      var val = getValueFromPayload(payload, key);
+      if (payload[key] !== undefined || val !== '') {
+        sheet.getRange(rIdx, j + 1).setValue(payload[key] !== undefined ? payload[key] : val);
       }
     }
+    SpreadsheetApp.flush();
     return { success: true };
   } finally {
     try { lock.releaseLock(); } catch(e) {}
+  }
+}
+
+/**
+ * Helper aman menghapus 1 baris di Google Sheets (anti error frozen row / filter)
+ */
+function deleteSingleRowSafe(sheet, rIdx) {
+  var activeFilter = sheet.getFilter();
+  if (activeFilter) {
+    try { activeFilter.remove(); } catch (fe) {}
+  }
+  try {
+    if (sheet.getMaxRows() <= rIdx && rIdx >= 2) {
+      sheet.insertRowAfter(rIdx);
+    }
+    sheet.deleteRow(rIdx);
+  } catch (err) {
+    var lastCol = Math.max(sheet.getLastColumn(), 1);
+    sheet.getRange(rIdx, 1, 1, lastCol).clearContent();
   }
 }
 
@@ -747,10 +883,63 @@ function deleteEntry(category, rowIndex) {
   try { lock.waitLock(15000); } catch(e) {}
   try {
     var ss = SpreadsheetApp.getActiveSpreadsheet();
-    var sheet = findTargetSheet(ss, category);
-    if (!sheet) return { success: false };
-    sheet.deleteRow(rowIndex);
-    return { success: true };
+    var sheet = findTargetSheet(ss, category, false);
+    if (!sheet) return { success: false, message: "Sheet tidak ditemukan." };
+
+    var rIdx = parseInt(rowIndex, 10);
+    var lastRow = sheet.getLastRow();
+    if (isNaN(rIdx) || rIdx < 2 || rIdx > lastRow) {
+      return { success: false, message: "Baris data tidak ditemukan atau tidak valid (row " + rowIndex + ")." };
+    }
+
+    deleteSingleRowSafe(sheet, rIdx);
+    SpreadsheetApp.flush();
+    return { success: true, deletedRow: rIdx, message: "Data berhasil dihapus dari Google Sheets." };
+  } catch (err) {
+    return { success: false, message: "Gagal menghapus baris: " + err.toString() };
+  } finally {
+    try { lock.releaseLock(); } catch(e) {}
+  }
+}
+
+function deleteMultipleEntries(category, rowIndices) {
+  var lock = LockService.getScriptLock();
+  try { lock.waitLock(20000); } catch(e) {}
+  try {
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var sheet = findTargetSheet(ss, category, false);
+    if (!sheet) return { success: false, message: "Sheet tidak ditemukan." };
+
+    if (!Array.isArray(rowIndices) || rowIndices.length === 0) {
+      return { success: false, message: "Daftar baris yang akan dihapus kosong." };
+    }
+
+    var lastRow = sheet.getLastRow();
+    var seen = {};
+    var validRows = [];
+    for (var i = 0; i < rowIndices.length; i++) {
+      var r = parseInt(rowIndices[i], 10);
+      if (!isNaN(r) && r >= 2 && r <= lastRow && !seen[r]) {
+        seen[r] = true;
+        validRows.push(r);
+      }
+    }
+
+    // Urutkan dari baris paling bawah ke atas agar nomor baris di atasnya tidak bergeser
+    validRows.sort(function(a, b) { return b - a; });
+
+    for (var k = 0; k < validRows.length; k++) {
+      deleteSingleRowSafe(sheet, validRows[k]);
+    }
+    SpreadsheetApp.flush();
+
+    return {
+      success: true,
+      deletedCount: validRows.length,
+      message: validRows.length + " baris data " + category + " berhasil dihapus permanen."
+    };
+  } catch (err) {
+    return { success: false, message: "Gagal menghapus beberapa baris: " + err.toString() };
   } finally {
     try { lock.releaseLock(); } catch(e) {}
   }
@@ -758,19 +947,117 @@ function deleteEntry(category, rowIndex) {
 
 function clearCategoryData(category) {
   var lock = LockService.getScriptLock();
-  try { lock.waitLock(15000); } catch(e) {}
+  try { lock.waitLock(20000); } catch(e) {}
   try {
+    var cat = String(category || '').toLowerCase().trim();
+    if (!cat) return { success: false, message: "Nama kategori tidak boleh kosong." };
+
     var ss = SpreadsheetApp.getActiveSpreadsheet();
-    var sheet = findTargetSheet(ss, category);
-    if (!sheet) return { success: false, message: "Sheet tidak ditemukan." };
+    var sheet = findTargetSheet(ss, cat, false);
+    if (!sheet) {
+      return { success: false, message: "Sheet untuk kategori '" + cat + "' tidak ditemukan di Spreadsheet." };
+    }
 
     var lastRow = sheet.getLastRow();
-    var lastCol = sheet.getLastColumn();
+    var lastCol = Math.max(sheet.getLastColumn(), 1);
 
-    if (lastRow > 1) {
-      sheet.getRange(2, 1, lastRow - 1, Math.max(lastCol, 1)).clearContent();
+    if (lastRow <= 1) {
+      return {
+        success: true,
+        category: cat,
+        deletedCount: 0,
+        message: "Data " + cat + " di Google Sheets sudah kosong."
+      };
     }
-    return { success: true, message: "Seluruh data " + category + " berhasil dibersihkan." };
+
+    // Khusus sheet 'users' (Data Ustaz): hapus semua akun non-admin dari bawah ke atas,
+    // pertahankan akun Admin utama agar aplikasi tidak terkunci saat login berikutnya.
+    if (cat === 'users') {
+      var values = sheet.getDataRange().getDisplayValues();
+      var headers = values[0].map(function(h) { return String(h).toLowerCase().trim().replace(/\\s+/g, '_'); });
+      var uCol = headers.indexOf('username');
+      var rCol = headers.indexOf('role');
+      if (uCol === -1) uCol = 0;
+
+      var deletedUstazCount = 0;
+      for (var r = values.length; r >= 2; r--) {
+        var rowArr = values[r - 1];
+        var uname = String(rowArr[uCol] || '').toLowerCase().trim();
+        var roleVal = rCol !== -1 ? String(rowArr[rCol] || '').toLowerCase().trim() : '';
+        var isAdminRow = (roleVal === 'admin' || uname === 'admin');
+        if (!isAdminRow) {
+          deleteSingleRowSafe(sheet, r);
+          deletedUstazCount++;
+        }
+      }
+      SpreadsheetApp.flush();
+
+      return {
+        success: true,
+        category: cat,
+        deletedCount: deletedUstazCount,
+        keptAdmin: true,
+        message: deletedUstazCount > 0
+          ? "Berhasil menghapus " + deletedUstazCount + " akun ustaz dari Google Sheets (akun Admin tetap dipertahankan agar akses login tidak terkunci)."
+          : "Tidak ada akun ustaz untuk dihapus (akun Admin utama tetap dipertahankan)."
+      };
+    }
+
+    // Untuk absensi, progress, mutabaah, informasi, keuangan, program, santri:
+    var deletedCount = lastRow - 1;
+
+    var activeFilter = sheet.getFilter();
+    if (activeFilter) {
+      try { activeFilter.remove(); } catch (fe) {}
+    }
+
+    try {
+      // Pastikan ada minimal 1 baris ekstra jika baris 1 di-freeze agar deleteRows tidak ditolak Sheets
+      if (sheet.getMaxRows() <= lastRow) {
+        sheet.insertRowAfter(lastRow);
+      }
+      sheet.deleteRows(2, deletedCount);
+    } catch (delErr) {
+      sheet.getRange(2, 1, deletedCount, lastCol).clearContent();
+    }
+
+    // Bersihkan sisa konten bila masih ada baris > 1 (mis. checkbox/array/spasi)
+    var remainingLastRow = sheet.getLastRow();
+    if (remainingLastRow > 1) {
+      var remainingCols = Math.max(sheet.getLastColumn(), lastCol);
+      sheet.getRange(2, 1, remainingLastRow - 1, remainingCols).clearContent();
+    }
+
+    SpreadsheetApp.flush();
+
+    // Verifikasi ulang bahwa tidak ada teks data yang tertinggal di baris 2+
+    var verifyLastRow = sheet.getLastRow();
+    if (verifyLastRow > 1) {
+      var verifyVals = sheet.getRange(2, 1, verifyLastRow - 1, Math.max(sheet.getLastColumn(), 1)).getDisplayValues();
+      var stillHasText = false;
+      for (var vr = 0; vr < verifyVals.length; vr++) {
+        for (var vc = 0; vc < verifyVals[vr].length; vc++) {
+          if (String(verifyVals[vr][vc] || '').trim() !== '') {
+            stillHasText = true;
+            break;
+          }
+        }
+        if (stillHasText) break;
+      }
+      if (stillHasText) {
+        return {
+          success: false,
+          message: "Sebagian data pada sheet '" + sheet.getName() + "' tidak dapat dihapus (kemungkinan ada rumus array atau proteksi sel)."
+        };
+      }
+    }
+
+    return {
+      success: true,
+      category: cat,
+      deletedCount: deletedCount,
+      message: "Seluruh data " + cat + " (" + deletedCount + " baris) berhasil dihapus permanen dari Google Sheets."
+    };
   } catch(err) {
     return { success: false, message: "Gagal membersihkan data: " + err.toString() };
   } finally {

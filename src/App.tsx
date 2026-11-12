@@ -565,11 +565,22 @@ export default function App() {
       isSubmittingRef.current = true;
       toggleLoading(true, 'Menghapus Data...');
       try {
-        await runServer('deleteEntry', [cat, rowIndex]);
-        showModal('info', 'Data berhasil dihapus.');
-        refreshData();
-      } catch (e) {
-        showModal('error', 'Gagal menghapus data.');
+        const res = await runServer<{ success?: boolean; message?: string; error?: string }>(
+          'deleteEntry',
+          [cat, rowIndex]
+        );
+        if (!res || res.success !== true) {
+          throw new Error(
+            res?.message ||
+              res?.error ||
+              'Google Apps Script tidak mengonfirmasi penghapusan baris.'
+          );
+        }
+        showModal('info', res.message || 'Data berhasil dihapus dari Google Sheets.');
+        await refreshData(false);
+      } catch (e: any) {
+        showModal('error', `Gagal menghapus data: ${e?.message || 'Terjadi kesalahan koneksi.'}`);
+        await refreshData(false);
       } finally {
         toggleLoading(false);
         isSubmittingRef.current = false;
@@ -577,27 +588,131 @@ export default function App() {
     });
   };
 
+  // Delete Multiple Rows (e.g., all records for a specific santri in a category)
+  const handleDeleteMultipleRows = (
+    cat: CategoryKey,
+    rowIndices: number[],
+    groupLabel?: string
+  ) => {
+    const uniqueRows = Array.from(
+      new Set((rowIndices || []).filter((r) => typeof r === 'number' && r >= 2))
+    );
+    if (uniqueRows.length === 0) {
+      showModal('error', 'Tidak ada baris valid yang dapat dihapus.');
+      return;
+    }
+
+    const labelText = groupLabel ? ` untuk <b>${groupLabel}</b>` : '';
+    showModal(
+      'confirm',
+      `Hapus seluruh catatan (${uniqueRows.length} data)${labelText} secara permanen dari Google Sheets?`,
+      async () => {
+        if (isSubmittingRef.current) return;
+        isSubmittingRef.current = true;
+        toggleLoading(true, `Menghapus ${uniqueRows.length} Data...`);
+        try {
+          const res = await runServer<{
+            success?: boolean;
+            message?: string;
+            error?: string;
+            deletedCount?: number;
+          }>('deleteMultipleEntries', [cat, uniqueRows]);
+
+          if (!res || res.success !== true) {
+            throw new Error(
+              res?.message ||
+                res?.error ||
+                'Backend Google Apps Script belum mendukung penghapusan massal (silakan update & deploy ulang kode .gs terbaru).'
+            );
+          }
+
+          showModal(
+            'info',
+            res.message || `${uniqueRows.length} data berhasil dihapus permanen dari Google Sheets.`
+          );
+          await refreshData(false);
+        } catch (e: any) {
+          showModal(
+            'error',
+            `Gagal menghapus data grup: ${e?.message || 'Terjadi kesalahan koneksi.'}`
+          );
+          await refreshData(false);
+        } finally {
+          toggleLoading(false);
+          isSubmittingRef.current = false;
+        }
+      }
+    );
+  };
+
   // Clear all data for a category
   const handleClearCategoryData = async (cat: CategoryKey) => {
     if (isSubmittingRef.current) return;
     isSubmittingRef.current = true;
+    toggleLoading(true, `Menghapus Semua Data ${cat.toUpperCase()}...`);
 
-    // Optimistically clear local state immediately
-    setAppData((prev) => ({
-      ...prev,
-      [cat]: [],
-    }));
+    const previousCategoryData = appData[cat];
 
-    setIsSyncing(true);
     try {
-      await runServer('clearCategoryData', [cat]);
-      showModal('info', `Seluruh data ${cat.toUpperCase()} berhasil dibersihkan dari Google Sheets!`);
+      const res = await runServer<{
+        success?: boolean;
+        message?: string;
+        error?: string;
+        deletedCount?: number;
+        keptAdmin?: boolean;
+      }>('clearCategoryData', [cat]);
+
+      if (!res || res.success !== true) {
+        const isOldBackendFallback =
+          res &&
+          typeof res === 'object' &&
+          'santri' in res &&
+          !('success' in res);
+
+        const detail = isOldBackendFallback
+          ? 'Google Apps Script yang sedang terpasang masih versi lama dan belum mendukung penghapusan massal (clearCategoryData). Silakan perbarui kode .gs lalu Deploy sebagai Versi Baru.'
+          : res?.message ||
+            res?.error ||
+            'Backend Google Apps Script tidak mengonfirmasi penghapusan data.';
+        throw new Error(detail);
+      }
+
+      if (cat === 'users') {
+        setAppData((prev) => ({
+          ...prev,
+          users: (prev.users || []).filter((u: any) => {
+            const r = String(u.role || '').toLowerCase().trim();
+            const uname = String(u.username || '').toLowerCase().trim();
+            return r === 'admin' || uname === 'admin';
+          }),
+        }));
+      } else {
+        setAppData((prev) => ({
+          ...prev,
+          [cat]: [],
+        }));
+      }
+
+      showModal(
+        'info',
+        res.message || `Seluruh data ${cat.toUpperCase()} berhasil dihapus permanen dari Google Sheets!`
+      );
       await refreshData(false);
-    } catch (e) {
+    } catch (e: any) {
       console.error('Clear category data error:', e);
-      showModal('error', `Gagal membersihkan data ${cat}.`);
+      setAppData((prev) => ({
+        ...prev,
+        [cat]: previousCategoryData,
+      }));
+      showModal(
+        'error',
+        `Gagal membersihkan data ${cat.toUpperCase()} di Google Sheets.<br/><br/><span class="text-xs opacity-90">${
+          e?.message || 'Terjadi kesalahan koneksi.'
+        }</span>`
+      );
+      await refreshData(false);
     } finally {
-      setIsSyncing(false);
+      toggleLoading(false);
       isSubmittingRef.current = false;
     }
   };
@@ -618,15 +733,23 @@ export default function App() {
         const sObj = appData.santri.find((s) => s.row_index === santriRowIndex);
         if (sObj) {
           try {
-            await runServer('updateEntry', ['santri', santriRowIndex, { ...sObj, program: '' }]);
-            refreshData();
-          } catch (e) {
-            showModal('error', 'Gagal memperbarui program santri.');
+            const res = await runServer<{ success?: boolean; message?: string }>('updateEntry', [
+              'santri',
+              santriRowIndex,
+              { ...sObj, program: '' },
+            ]);
+            if (!res || res.success !== true) {
+              throw new Error(res?.message || 'Gagal memperbarui program santri di Google Sheets.');
+            }
+            await refreshData(false);
+          } catch (e: any) {
+            showModal('error', e?.message || 'Gagal memperbarui program santri.');
           } finally {
             toggleLoading(false);
             isSubmittingRef.current = false;
           }
         } else {
+          toggleLoading(false);
           isSubmittingRef.current = false;
         }
       }
@@ -643,16 +766,22 @@ export default function App() {
         isSubmittingRef.current = true;
         toggleLoading(true, 'Menghapus Program...');
         try {
-          await runServer('deleteEntry', ['program', rowIndex]);
+          const res = await runServer<{ success?: boolean; message?: string }>('deleteEntry', [
+            'program',
+            rowIndex,
+          ]);
+          if (!res || res.success !== true) {
+            throw new Error(res?.message || 'Gagal menghapus program di Google Sheets.');
+          }
           const enrolled = (appData.santri || []).filter(
             (s) => (s.program || '').toLowerCase() === progName.toLowerCase()
           );
           for (const s of enrolled) {
             await runServer('updateEntry', ['santri', s.row_index, { ...s, program: '' }]);
           }
-          refreshData();
-        } catch (e) {
-          showModal('error', 'Gagal menghapus program.');
+          await refreshData(false);
+        } catch (e: any) {
+          showModal('error', e?.message || 'Gagal menghapus program.');
         } finally {
           toggleLoading(false);
           isSubmittingRef.current = false;
@@ -919,6 +1048,7 @@ export default function App() {
                     }
                     onStartEdit={handleStartEdit}
                     onDeleteRow={handleDeleteRow}
+                    onDeleteMultipleRows={handleDeleteMultipleRows}
                     onDisenrollSantri={handleDisenrollSantri}
                     onDeleteProgram={handleDeleteProgram}
                     onClearCategoryData={handleClearCategoryData}

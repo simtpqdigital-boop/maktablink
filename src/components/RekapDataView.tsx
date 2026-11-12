@@ -23,6 +23,7 @@ interface RekapDataViewProps {
   onBackToDataMenu: () => void;
   onStartEdit: (category: CategoryKey, rowIndex: number) => void;
   onDeleteRow: (category: CategoryKey, rowIndex: number) => void;
+  onDeleteMultipleRows?: (category: CategoryKey, rowIndices: number[], groupLabel?: string) => void;
   onDisenrollSantri: (santriRowIndex: number, santriNama: string, progName: string) => void;
   onDeleteProgram: (rowIndex: number, progName: string) => void;
   onClearCategoryData?: (category: CategoryKey) => void;
@@ -35,6 +36,7 @@ export const RekapDataView: React.FC<RekapDataViewProps> = ({
   onBackToDataMenu,
   onStartEdit,
   onDeleteRow,
+  onDeleteMultipleRows,
   onDisenrollSantri,
   onDeleteProgram,
   onClearCategoryData,
@@ -74,12 +76,21 @@ export const RekapDataView: React.FC<RekapDataViewProps> = ({
     progress: 'Progres',
     mutabaah: "Mu'tabaah",
     informasi: 'Pengumuman',
-    users: 'Data Ustaz',
+    users: 'Ustaz',
     program: 'Program',
     keuangan: 'Keuangan',
-    santri: 'Data Santri',
+    santri: 'Santri',
   };
   const categoryShortName = categoryShortNames[category] || category.toUpperCase();
+
+  const clearableCount =
+    category === 'users'
+      ? rawCategoryData.filter((u: any) => {
+          const r = String(u.role || '').toLowerCase().trim();
+          const uname = String(u.username || '').toLowerCase().trim();
+          return r !== 'admin' && uname !== 'admin';
+        }).length
+      : rawCategoryData.length;
 
   // Unique programs list
   const programList = data.program || [];
@@ -184,10 +195,11 @@ export const RekapDataView: React.FC<RekapDataViewProps> = ({
 
   // Function to delete all records belonging to a group
   const handleDeleteGroup = (groupName: string, items: any[]) => {
-    if (confirm(`Hapus seluruh catatan (${items.length} data) untuk "${groupName}"?`)) {
-      items.forEach((item) => {
-        onDeleteRow(category, item.row_index);
-      });
+    const rowIndices = items.map((item) => item.row_index).filter((r) => typeof r === 'number');
+    if (onDeleteMultipleRows) {
+      onDeleteMultipleRows(category, rowIndices, groupName);
+    } else if (rowIndices.length > 0) {
+      onDeleteRow(category, rowIndices[0]);
     }
   };
 
@@ -226,9 +238,11 @@ export const RekapDataView: React.FC<RekapDataViewProps> = ({
         {onClearCategoryData && (
           <div className="flex items-center justify-between bg-rose-950/40 border border-rose-500/30 p-2.5 rounded-xl">
             <span className="text-[10px] font-black text-rose-300 uppercase tracking-tight pl-1 font-['Outfit']">
-              Total: {rawCategoryData.length} Record {categoryShortName}
+              {category === 'users'
+                ? `Total: ${clearableCount} Akun Ustaz`
+                : `Total: ${rawCategoryData.length} Record ${categoryShortName}`}
             </span>
-            {rawCategoryData.length > 0 ? (
+            {clearableCount > 0 ? (
               <button
                 type="button"
                 onClick={() => setShowClearConfirm(true)}
@@ -239,7 +253,7 @@ export const RekapDataView: React.FC<RekapDataViewProps> = ({
               </button>
             ) : (
               <span className="text-[9.5px] font-bold text-rose-300/50 italic pr-1">
-                Data Kosong
+                {category === 'users' ? 'Tidak Ada Akun Ustaz' : 'Data Kosong'}
               </span>
             )}
           </div>
@@ -893,12 +907,23 @@ export const RekapDataView: React.FC<RekapDataViewProps> = ({
             </div>
             <div className="text-center space-y-2">
               <h3 className="text-base font-black text-white tracking-tight uppercase font-['Outfit']">
-                Hapus Semua Data {category.toUpperCase()}?
+                Hapus Semua Data {categoryShortName.toUpperCase()}?
               </h3>
               <p className="text-xs text-teal-200/70 font-medium leading-relaxed">
-                Tindakan ini akan <strong>menghapus secara permanen</strong> seluruh data {category}{' '}
-                di aplikasi dan membersihkan baris pada Google Spreadsheet. Data yang telah dihapus
-                tidak dapat dikembalikan.
+                {category === 'users' ? (
+                  <>
+                    Tindakan ini akan <strong>menghapus secara permanen</strong> seluruh akun{' '}
+                    <strong>Ustaz / Pengajar</strong> di Google Spreadsheet (akun Admin utama tetap
+                    dipertahankan agar login tidak terkunci). Data yang dihapus tidak dapat
+                    dikembalikan.
+                  </>
+                ) : (
+                  <>
+                    Tindakan ini akan <strong>menghapus secara permanen</strong> seluruh data{' '}
+                    {categoryShortName} di aplikasi dan menghapus barisnya pada Google Spreadsheet.
+                    Data yang telah dihapus tidak dapat dikembalikan.
+                  </>
+                )}
               </p>
             </div>
             <div className="grid grid-cols-2 gap-3 pt-2">
