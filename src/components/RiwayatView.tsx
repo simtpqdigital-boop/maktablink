@@ -116,8 +116,8 @@ export const RiwayatView: React.FC<RiwayatViewProps> = ({ data }) => {
             >
               <option value="">-- Semua Santri --</option>
               {santriFilteredByProgram.map((s) => (
-                <option key={s.row_index} value={s.nama}>
-                  {s.nama.toUpperCase()} - {s.nis}
+                <option key={s.row_index} value={s.nama || ''}>
+                  {(s.nama || 'SANTRI').toUpperCase()} - {s.nis || '-'}
                 </option>
               ))}
             </select>

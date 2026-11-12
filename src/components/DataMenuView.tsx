@@ -657,11 +657,15 @@ export const DataMenuView: React.FC<DataMenuViewProps> = ({
                     className="w-full p-3 bg-[#042422] border border-teal-500/30 rounded-2xl outline-none focus:border-emerald-400 font-semibold text-xs text-white"
                   >
                     <option value="" className="bg-[#042422] text-white">-- Pilih Program --</option>
-                    {(data.program || []).map((p, idx) => (
-                      <option key={idx} value={p.nama_program} className="bg-[#042422] text-white">
-                        {p.nama_program.toUpperCase()}
-                      </option>
-                    ))}
+                    {(data.program || []).map((p, idx) => {
+                      const progLabel = p.nama_program || p.program || p.nama || '';
+                      if (!progLabel) return null;
+                      return (
+                        <option key={idx} value={progLabel} className="bg-[#042422] text-white">
+                          {String(progLabel).toUpperCase()}
+                        </option>
+                      );
+                    })}
                   </select>
                 </div>
               </div>

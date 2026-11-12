@@ -226,7 +226,7 @@ export const InputFormView: React.FC<InputFormViewProps> = ({
     const q = santriSearch.toLowerCase().trim();
     const matchSearch =
       !q ||
-      s.nama.toLowerCase().includes(q) ||
+      (s.nama || '').toLowerCase().includes(q) ||
       (s.nis || '').toLowerCase().includes(q);
 
     return matchProg && matchSearch;
@@ -549,11 +549,15 @@ export const InputFormView: React.FC<InputFormViewProps> = ({
                   className="w-full p-3.5 bg-[#042422] border border-teal-500/30 rounded-2xl outline-none focus:border-emerald-400 font-bold text-xs text-white"
                 >
                   <option value="" className="bg-[#042422] text-white">-- Semua Program / Kelas --</option>
-                  {(data.program || []).map((p, idx) => (
-                    <option key={idx} value={p.nama_program} className="bg-[#042422] text-white">
-                      {p.nama_program.toUpperCase()}
-                    </option>
-                  ))}
+                  {(data.program || []).map((p, idx) => {
+                    const progLabel = p.nama_program || p.program || p.nama || '';
+                    if (!progLabel) return null;
+                    return (
+                      <option key={idx} value={progLabel} className="bg-[#042422] text-white">
+                        {String(progLabel).toUpperCase()}
+                      </option>
+                    );
+                  })}
                 </select>
               </div>
 
@@ -612,7 +616,7 @@ export const InputFormView: React.FC<InputFormViewProps> = ({
                     >
                       <div>
                         <h5 className="font-extrabold text-xs text-white tracking-tight font-['Outfit']">
-                          {s.nama.toUpperCase()}
+                          {(s.nama || 'SANTRI').toUpperCase()}
                         </h5>
                         <p className="text-[10px] text-teal-200/70 font-bold">
                           NIS: {s.nis || '-'} • {s.program || 'Umum'}
@@ -688,11 +692,15 @@ export const InputFormView: React.FC<InputFormViewProps> = ({
                 className="w-full p-3.5 bg-[#042422] border border-teal-500/30 rounded-2xl outline-none focus:border-emerald-400 font-bold text-xs text-white"
               >
                 <option value="" className="bg-[#042422] text-white">-- Semua Program --</option>
-                {(data.program || []).map((p, idx) => (
-                  <option key={idx} value={p.nama_program} className="bg-[#042422] text-white">
-                    {p.nama_program.toUpperCase()}
-                  </option>
-                ))}
+                {(data.program || []).map((p, idx) => {
+                  const progLabel = p.nama_program || p.program || p.nama || '';
+                  if (!progLabel) return null;
+                  return (
+                    <option key={idx} value={progLabel} className="bg-[#042422] text-white">
+                      {String(progLabel).toUpperCase()}
+                    </option>
+                  );
+                })}
               </select>
             </div>
 
@@ -769,7 +777,7 @@ export const InputFormView: React.FC<InputFormViewProps> = ({
               <div>
                 <p className="text-[10px] font-bold uppercase text-emerald-300 font-['Outfit']">Santri Terpilih</p>
                 <h4 className="text-sm font-extrabold tracking-tight font-['Outfit']">
-                  {selectedSantri.nama.toUpperCase()} (NIS: {selectedSantri.nis || '-'})
+                  {(selectedSantri.nama || 'SANTRI').toUpperCase()} (NIS: {selectedSantri.nis || '-'})
                 </h4>
               </div>
               <span className="text-xs bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 px-3 py-1.5 rounded-xl font-bold font-['Outfit']">
@@ -1069,11 +1077,15 @@ export const InputFormView: React.FC<InputFormViewProps> = ({
                 className="w-full p-3.5 bg-[#042422] border border-teal-500/30 rounded-2xl outline-none focus:border-emerald-400 font-bold text-xs text-white"
               >
                 <option value="" className="bg-[#042422] text-white">-- Semua Program --</option>
-                {(data.program || []).map((p, idx) => (
-                  <option key={idx} value={p.nama_program} className="bg-[#042422] text-white">
-                    {p.nama_program.toUpperCase()}
-                  </option>
-                ))}
+                {(data.program || []).map((p, idx) => {
+                  const progLabel = p.nama_program || p.program || p.nama || '';
+                  if (!progLabel) return null;
+                  return (
+                    <option key={idx} value={progLabel} className="bg-[#042422] text-white">
+                      {String(progLabel).toUpperCase()}
+                    </option>
+                  );
+                })}
               </select>
             </div>
 
@@ -1150,7 +1162,7 @@ export const InputFormView: React.FC<InputFormViewProps> = ({
               <div>
                 <p className="text-[10px] font-bold uppercase text-emerald-300 font-['Outfit']">Santri Terpilih</p>
                 <h4 className="text-sm font-extrabold tracking-tight font-['Outfit']">
-                  {selectedSantri.nama.toUpperCase()} (NIS: {selectedSantri.nis || '-'})
+                  {(selectedSantri.nama || 'SANTRI').toUpperCase()} (NIS: {selectedSantri.nis || '-'})
                 </h4>
               </div>
               <span className="text-xs bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 px-3 py-1.5 rounded-xl font-bold font-['Outfit']">
@@ -1344,7 +1356,7 @@ export const InputFormView: React.FC<InputFormViewProps> = ({
               <div>
                 <p className="text-[10px] font-bold uppercase text-emerald-300 font-['Outfit']">Santri Terpilih</p>
                 <h4 className="text-sm font-extrabold tracking-tight font-['Outfit']">
-                  {selectedSantri.nama.toUpperCase()} (NIS: {selectedSantri.nis || '-'})
+                  {(selectedSantri.nama || 'SANTRI').toUpperCase()} (NIS: {selectedSantri.nis || '-'})
                 </h4>
               </div>
               <span className="text-xs bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 px-3 py-1.5 rounded-xl font-bold font-['Outfit']">
@@ -1544,8 +1556,8 @@ export const InputFormView: React.FC<InputFormViewProps> = ({
                       <option value="Semua Santri" className="bg-[#042422] text-white">📢 SEMUA SANTRI</option>
                     )}
                     {(data.santri || []).map((s) => (
-                      <option key={s.row_index || s.nama} value={s.nama} className="bg-[#042422] text-white">
-                        {s.nama.toUpperCase()} - {s.nis}
+                      <option key={s.row_index || s.nama} value={s.nama || ''} className="bg-[#042422] text-white">
+                        {(s.nama || 'SANTRI').toUpperCase()} - {s.nis || '-'}
                       </option>
                     ))}
                   </select>

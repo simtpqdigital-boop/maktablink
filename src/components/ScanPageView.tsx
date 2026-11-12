@@ -1175,7 +1175,7 @@ export const ScanPageView: React.FC<ScanPageViewProps> = ({
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
               <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-600 text-slate-950 font-black text-base flex items-center justify-center shrink-0 shadow-md">
-                {scannedSantri.nama[0]?.toUpperCase()}
+                {(scannedSantri.nama || 'S')[0]?.toUpperCase()}
               </div>
               <div>
                 <div className="flex items-center space-x-1.5">
