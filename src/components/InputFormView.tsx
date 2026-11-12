@@ -458,14 +458,21 @@ export const InputFormView: React.FC<InputFormViewProps> = ({
   };
 
   return (
-    <div className="p-6">
-      <h3 className="text-xl font-bold mb-6 text-slate-900 tracking-tight font-['Outfit']">
-        {editMode.active ? `Update Data ${editMode.category.toUpperCase()}` : 'Input Data Baru'}
-      </h3>
+    <div className="p-4 md:p-6 pb-28 text-slate-100 space-y-4">
+      {/* Header Bar */}
+      <div className="bg-gradient-to-r from-[#083834] via-[#062c29] to-[#03201e] p-5 rounded-2xl text-white shadow-lg border border-teal-500/25">
+        <span className="text-[9px] font-extrabold text-emerald-300 uppercase tracking-widest font-['Outfit'] flex items-center gap-1.5">
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+          Form Entri &amp; Mutasi Data
+        </span>
+        <h3 className="text-xl font-black text-white font-['Outfit'] tracking-tight">
+          {editMode.active ? `Update Data ${editMode.category.toUpperCase()}` : 'Input Data Baru'}
+        </h3>
+      </div>
 
       {!editMode.active && (
-        <div className="mb-6">
-          <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 block mb-1">
+        <div className="space-y-1">
+          <label className="text-[10px] font-black text-teal-300/80 uppercase tracking-widest ml-1 block font-['Outfit']">
             Pilih Kategori Input
           </label>
           <select
@@ -474,41 +481,43 @@ export const InputFormView: React.FC<InputFormViewProps> = ({
               setCategory(e.target.value as CategoryKey);
               setSelectedSantri(null);
             }}
-            className="w-full p-4 bg-slate-100 border border-slate-200 rounded-2xl outline-none font-bold text-sm text-slate-800 focus:border-emerald-500 shadow-2xs"
+            className="w-full p-4 bg-[#083834]/80 border border-teal-500/30 rounded-2xl outline-none font-bold text-sm text-white focus:border-emerald-400 shadow-md backdrop-blur-xl"
           >
-            <option value="absensi">⚡ Absensi Kilat Kelas</option>
-            <option value="progress">📖 Progress Hafalan (Pilih Santri)</option>
-            <option value="mutabaah">🤲 Mu'tabaah Yaumiyah (Pilih Santri)</option>
-            {isAdmin && <option value="keuangan">💰 Keuangan</option>}
-            <option value="informasi">📢 Informasi Publik</option>
-            <option value="program">🏫 Program Baru</option>
-            {isAdmin && <option value="users">👤 Data Ustaz / Pengajar</option>}
+            <option value="absensi" className="bg-[#042422] text-white">⚡ Absensi Kilat Kelas</option>
+            <option value="progress" className="bg-[#042422] text-white">📖 Progress Hafalan (Pilih Santri)</option>
+            <option value="mutabaah" className="bg-[#042422] text-white">🤲 Mu'tabaah Yaumiyah (Pilih Santri)</option>
+            {isAdmin && <option value="keuangan" className="bg-[#042422] text-white">💰 Keuangan</option>}
+            <option value="informasi" className="bg-[#042422] text-white">📢 Informasi Publik</option>
+            <option value="program" className="bg-[#042422] text-white">🏫 Program Baru</option>
+            {isAdmin && <option value="users" className="bg-[#042422] text-white">👤 Data Ustaz / Pengajar</option>}
           </select>
         </div>
       )}
 
       {/* MODE 1: ABSENSI KILAT KELAS */}
       {category === 'absensi' && !editMode.active && (
-        <form onSubmit={handleQuickAttendanceSubmit} className="space-y-6">
-          <div className="p-5 bg-emerald-50/60 border-2 border-emerald-100 rounded-3xl space-y-4">
-            <div className="flex items-center space-x-2 text-emerald-800">
+        <form onSubmit={handleQuickAttendanceSubmit} className="space-y-4">
+          <div className="p-5 bg-[#083834]/70 border border-teal-500/25 rounded-3xl space-y-4 backdrop-blur-xl">
+            <div className="flex items-center space-x-2 text-emerald-300">
               <span className="text-lg">📋</span>
-              <h4 className="font-extrabold text-sm tracking-tight font-['Outfit']">Form Absensi Massal Kelas</h4>
+              <h4 className="font-extrabold text-sm tracking-tight font-['Outfit'] text-white">
+                Form Absensi Massal Kelas
+              </h4>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="space-y-1">
-                <label className="text-[10px] font-black text-slate-500 uppercase ml-1">
+                <label className="text-[10px] font-black text-teal-300/80 uppercase ml-1">
                   Pilih Program / Kelas
                 </label>
                 <select
                   value={selectedProgram}
                   onChange={(e) => setSelectedProgram(e.target.value)}
-                  className="w-full p-3.5 bg-white border-2 border-emerald-200/80 rounded-2xl outline-none focus:border-emerald-600 font-bold text-xs text-slate-800 shadow-2xs"
+                  className="w-full p-3.5 bg-[#042422] border border-teal-500/30 rounded-2xl outline-none focus:border-emerald-400 font-bold text-xs text-white"
                 >
-                  <option value="">-- Semua Program / Kelas --</option>
+                  <option value="" className="bg-[#042422] text-white">-- Semua Program / Kelas --</option>
                   {(data.program || []).map((p, idx) => (
-                    <option key={idx} value={p.nama_program}>
+                    <option key={idx} value={p.nama_program} className="bg-[#042422] text-white">
                       {p.nama_program.toUpperCase()}
                     </option>
                   ))}
@@ -516,20 +525,20 @@ export const InputFormView: React.FC<InputFormViewProps> = ({
               </div>
 
               <div className="space-y-1">
-                <label className="text-[10px] font-black text-slate-500 uppercase ml-1">
+                <label className="text-[10px] font-black text-teal-300/80 uppercase ml-1">
                   Tanggal Absensi
                 </label>
                 <input
                   type="date"
                   value={selectedDate}
                   onChange={(e) => setSelectedDate(e.target.value)}
-                  className="w-full p-3.5 bg-white border-2 border-emerald-200/80 rounded-2xl outline-none focus:border-emerald-600 font-bold text-xs text-slate-800 shadow-2xs"
+                  className="w-full p-3.5 bg-[#042422] border border-teal-500/30 rounded-2xl outline-none focus:border-emerald-400 font-bold text-xs text-white"
                 />
               </div>
             </div>
 
             <div className="space-y-1">
-              <label className="text-[10px] font-black text-slate-500 uppercase ml-1">
+              <label className="text-[10px] font-black text-teal-300/80 uppercase ml-1">
                 Keterangan / Catatan Sesi
               </label>
               <input
@@ -537,7 +546,7 @@ export const InputFormView: React.FC<InputFormViewProps> = ({
                 value={keteranganAbsensi}
                 onChange={(e) => setKeteranganAbsensi(e.target.value)}
                 placeholder="Contoh: Pertemuan Rutin Pekanan..."
-                className="w-full p-3 bg-white border border-emerald-200 rounded-xl outline-none text-xs font-semibold text-slate-800"
+                className="w-full p-3 bg-[#042422] border border-teal-500/30 rounded-xl outline-none text-xs font-semibold text-white placeholder-teal-200/40 focus:border-emerald-400"
               />
             </div>
           </div>
@@ -545,16 +554,16 @@ export const InputFormView: React.FC<InputFormViewProps> = ({
           {/* LIST SANTRI FOR ATTENDANCE */}
           <div className="space-y-2">
             <div className="flex justify-between items-center px-1">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">
+              <label className="text-[10px] font-black text-teal-300/80 uppercase tracking-widest block font-['Outfit']">
                 Daftar Santri ({filteredSantriList.length})
               </label>
-              <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md">
+              <span className="text-[10px] font-bold text-emerald-300 bg-emerald-500/20 border border-emerald-500/30 px-2 py-0.5 rounded-md">
                 Default: Hadir (H)
               </span>
             </div>
 
             {filteredSantriList.length === 0 ? (
-              <div className="p-8 text-center bg-slate-50 border-2 border-dashed border-slate-200 rounded-3xl text-slate-400 text-xs font-bold">
+              <div className="p-8 text-center bg-[#083834]/40 border-2 border-dashed border-teal-500/25 rounded-3xl text-teal-200/50 text-xs font-bold">
                 Tidak ada data santri ditemukan.
               </div>
             ) : (
@@ -566,24 +575,24 @@ export const InputFormView: React.FC<InputFormViewProps> = ({
                   return (
                     <div
                       key={s.row_index || idx}
-                      className="p-3.5 bg-white border border-slate-100 rounded-2xl shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-2"
+                      className="p-3.5 bg-[#083834]/80 border border-teal-500/25 rounded-2xl shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-2 backdrop-blur-xl"
                     >
                       <div>
-                        <h5 className="font-extrabold text-xs text-slate-900 tracking-tight">
+                        <h5 className="font-extrabold text-xs text-white tracking-tight font-['Outfit']">
                           {s.nama.toUpperCase()}
                         </h5>
-                        <p className="text-[10px] text-slate-400 font-bold">
+                        <p className="text-[10px] text-teal-200/70 font-bold">
                           NIS: {s.nis || '-'} • {s.program || 'Umum'}
                         </p>
                       </div>
 
-                      <div className="flex items-center space-x-1 bg-slate-100 p-1 rounded-xl self-end sm:self-auto">
+                      <div className="flex items-center space-x-1 bg-[#042422] p-1 rounded-xl border border-teal-500/25 self-end sm:self-auto">
                         {(
                           [
-                            { code: 'H', label: 'H', bg: 'bg-emerald-600 text-white' },
-                            { code: 'I', label: 'I', bg: 'bg-blue-600 text-white' },
-                            { code: 'S', label: 'S', bg: 'bg-amber-500 text-white' },
-                            { code: 'A', label: 'A', bg: 'bg-rose-600 text-white' },
+                            { code: 'H', label: 'H', bg: 'bg-emerald-400 text-slate-950 font-black' },
+                            { code: 'I', label: 'I', bg: 'bg-teal-500 text-white font-bold' },
+                            { code: 'S', label: 'S', bg: 'bg-amber-400 text-slate-950 font-bold' },
+                            { code: 'A', label: 'A', bg: 'bg-rose-500 text-white font-bold' },
                           ] as const
                         ).map((st) => (
                           <button
@@ -595,7 +604,7 @@ export const InputFormView: React.FC<InputFormViewProps> = ({
                             className={`w-8 h-8 rounded-lg font-black text-xs transition-all flex items-center justify-center ${
                               currentStatus === st.code
                                 ? `${st.bg} shadow-xs scale-105`
-                                : 'text-slate-500 hover:text-slate-800'
+                                : 'text-teal-200/60 hover:text-white'
                             }`}
                           >
                             {st.label}
@@ -612,13 +621,13 @@ export const InputFormView: React.FC<InputFormViewProps> = ({
           <button
             type="submit"
             disabled={isSubmitting || filteredSantriList.length === 0}
-            className={`w-full py-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-2xl shadow-lg shadow-emerald-200 transition-all uppercase text-xs flex items-center justify-center space-x-2 ${
+            className={`w-full py-4 bg-gradient-to-r from-emerald-400 to-teal-300 hover:from-emerald-300 hover:to-teal-200 text-slate-950 font-black rounded-2xl shadow-lg shadow-emerald-500/20 transition-all uppercase text-xs flex items-center justify-center space-x-2 border border-emerald-300/30 ${
               isSubmitting ? 'opacity-80 cursor-not-allowed' : 'active:scale-95'
             }`}
           >
             {isSubmitting ? (
               <>
-                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                <div className="w-4 h-4 border-2 border-slate-950 border-t-transparent rounded-full animate-spin" />
                 <span>Menyimpan Absensi...</span>
               </>
             ) : (
@@ -630,11 +639,11 @@ export const InputFormView: React.FC<InputFormViewProps> = ({
 
       {/* MODE 2: PROGRESS HAFALAN (ENHANCED ACCORDING TO SPEC) */}
       {category === 'progress' && !editMode.active && (
-        <form onSubmit={handleSubmitProgressHafalan} className="space-y-5">
+        <form onSubmit={handleSubmitProgressHafalan} className="space-y-4">
           {/* TOP ROW: PROGRAM & SETTING TANGGAL */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-4 bg-emerald-50/50 border border-emerald-100 rounded-3xl">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-4 bg-[#083834]/70 border border-teal-500/25 rounded-3xl backdrop-blur-xl">
             <div className="space-y-1">
-              <label className="text-[10px] font-black text-slate-500 uppercase ml-1">
+              <label className="text-[10px] font-black text-teal-300/80 uppercase ml-1">
                 Pilih Program / Kelas
               </label>
               <select
@@ -643,11 +652,11 @@ export const InputFormView: React.FC<InputFormViewProps> = ({
                   setSelectedProgram(e.target.value);
                   setSelectedSantri(null);
                 }}
-                className="w-full p-3.5 bg-white border-2 border-emerald-200/80 rounded-2xl outline-none focus:border-emerald-600 font-bold text-xs text-slate-800 shadow-2xs"
+                className="w-full p-3.5 bg-[#042422] border border-teal-500/30 rounded-2xl outline-none focus:border-emerald-400 font-bold text-xs text-white"
               >
-                <option value="">-- Semua Program --</option>
+                <option value="" className="bg-[#042422] text-white">-- Semua Program --</option>
                 {(data.program || []).map((p, idx) => (
-                  <option key={idx} value={p.nama_program}>
+                  <option key={idx} value={p.nama_program} className="bg-[#042422] text-white">
                     {p.nama_program.toUpperCase()}
                   </option>
                 ))}
@@ -655,21 +664,21 @@ export const InputFormView: React.FC<InputFormViewProps> = ({
             </div>
 
             <div className="space-y-1">
-              <label className="text-[10px] font-black text-slate-500 uppercase ml-1">
+              <label className="text-[10px] font-black text-teal-300/80 uppercase ml-1">
                 Setting Tanggal
               </label>
               <input
                 type="date"
                 value={selectedDate}
                 onChange={(e) => setSelectedDate(e.target.value)}
-                className="w-full p-3.5 bg-white border-2 border-emerald-200/80 rounded-2xl outline-none focus:border-emerald-600 font-bold text-xs text-slate-800 shadow-2xs"
+                className="w-full p-3.5 bg-[#042422] border border-teal-500/30 rounded-2xl outline-none focus:border-emerald-400 font-bold text-xs text-white"
               />
             </div>
           </div>
 
           {/* SECOND ROW: SEARCH SANTRI */}
           <div className="space-y-2">
-            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 block">
+            <label className="text-[10px] font-black text-teal-300/80 uppercase tracking-widest ml-1 block font-['Outfit']">
               Pencarian Santri (Ketik Nama / NIS)
             </label>
             <div className="relative">
@@ -678,15 +687,15 @@ export const InputFormView: React.FC<InputFormViewProps> = ({
                 value={santriSearch}
                 onChange={(e) => setSantriSearch(e.target.value)}
                 placeholder="Ketik nama (misal: Ahmad)..."
-                className="w-full p-4 pl-11 bg-slate-50 border-2 border-slate-200 rounded-2xl outline-none focus:border-emerald-500 font-bold text-sm text-slate-900"
+                className="w-full p-4 pl-11 bg-[#083834]/80 border border-teal-500/30 rounded-2xl outline-none focus:border-emerald-400 font-bold text-sm text-white placeholder-teal-200/40 backdrop-blur-xl"
               />
-              <Search className="w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+              <Search className="w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2 text-teal-400" />
             </div>
 
             {/* DAFTAR NAMA SANTRI FILTERED */}
-            <div className="max-h-40 overflow-y-auto border border-slate-200 rounded-2xl divide-y divide-slate-100 bg-white">
+            <div className="max-h-40 overflow-y-auto border border-teal-500/25 rounded-2xl divide-y divide-teal-500/20 bg-[#083834]/80 backdrop-blur-xl">
               {filteredSantriList.length === 0 ? (
-                <div className="p-4 text-center text-xs text-slate-400 font-bold">
+                <div className="p-4 text-center text-xs text-teal-200/50 font-bold">
                   Santri tidak ditemukan. Pastikan nama atau program sesuai.
                 </div>
               ) : (
@@ -699,18 +708,18 @@ export const InputFormView: React.FC<InputFormViewProps> = ({
                       onClick={() => setSelectedSantri(s)}
                       className={`w-full p-3 text-left flex items-center justify-between transition-all ${
                         isSelected
-                          ? 'bg-emerald-50 font-black text-emerald-900'
-                          : 'hover:bg-slate-50 text-slate-700'
+                          ? 'bg-emerald-500/20 font-black text-white'
+                          : 'hover:bg-teal-500/10 text-teal-100'
                       }`}
                     >
                       <div>
-                        <p className="text-xs font-bold uppercase">{s.nama}</p>
-                        <p className="text-[10px] text-slate-400">
+                        <p className="text-xs font-bold uppercase font-['Outfit']">{s.nama}</p>
+                        <p className="text-[10px] text-teal-300/70">
                           NIS: {s.nis || '-'} • Program: {s.program || 'Umum'}
                         </p>
                       </div>
                       {isSelected && (
-                        <span className="px-2.5 py-1 bg-emerald-600 text-white rounded-lg text-[10px] font-black uppercase">
+                        <span className="px-2.5 py-1 bg-gradient-to-r from-emerald-400 to-teal-300 text-slate-950 rounded-lg text-[10px] font-black uppercase font-['Outfit']">
                           ✓ Terpilih
                         </span>
                       )}
@@ -723,19 +732,19 @@ export const InputFormView: React.FC<InputFormViewProps> = ({
 
           {/* SELECTED SANTRI BANNER */}
           {selectedSantri ? (
-            <div className="p-4 bg-emerald-600 text-white rounded-2xl shadow-md flex items-center justify-between">
+            <div className="p-4 bg-gradient-to-r from-[#031e1c] via-[#083834] to-[#042422] text-white rounded-2xl shadow-md border border-teal-500/30 flex items-center justify-between">
               <div>
-                <p className="text-[10px] font-bold uppercase text-emerald-200">Santri Terpilih</p>
+                <p className="text-[10px] font-bold uppercase text-emerald-300 font-['Outfit']">Santri Terpilih</p>
                 <h4 className="text-sm font-extrabold tracking-tight font-['Outfit']">
                   {selectedSantri.nama.toUpperCase()} (NIS: {selectedSantri.nis || '-'})
                 </h4>
               </div>
-              <span className="text-xs bg-emerald-700 px-3 py-1.5 rounded-xl font-bold">
+              <span className="text-xs bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 px-3 py-1.5 rounded-xl font-bold font-['Outfit']">
                 Ready Input
               </span>
             </div>
           ) : (
-            <div className="p-4 bg-amber-50 border border-amber-200 text-amber-800 rounded-2xl text-xs font-bold text-center">
+            <div className="p-4 bg-[#083834]/50 border border-amber-500/30 text-amber-300 rounded-2xl text-xs font-bold text-center">
               ⚠️ Klik salah satu nama santri di atas untuk melanjutkan input data.
             </div>
           )}
@@ -745,7 +754,7 @@ export const InputFormView: React.FC<InputFormViewProps> = ({
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {/* KOLOM CAPAIAN */}
               <div className="space-y-1">
-                <label className="text-[10px] font-black text-slate-500 uppercase ml-1">
+                <label className="text-[10px] font-black text-teal-300/80 uppercase ml-1">
                   Capaian
                 </label>
                 <select
@@ -755,18 +764,18 @@ export const InputFormView: React.FC<InputFormViewProps> = ({
                     setProgressForm((prev) => ({ ...prev, capaian: newCap, surahJilid: '' }));
                     setSelectedSurahs([]);
                   }}
-                  className="w-full p-3.5 bg-white border-2 border-slate-200 rounded-2xl outline-none focus:border-emerald-500 font-extrabold text-xs text-slate-900"
+                  className="w-full p-3.5 bg-[#042422] border border-teal-500/30 rounded-2xl outline-none focus:border-emerald-400 font-extrabold text-xs text-white"
                 >
-                  <option value="Tahfidz Qur'an">Tahfidz Qur'an</option>
-                  <option value="Tilawah">Tilawah</option>
-                  <option value="Hafalan">Hafalan</option>
-                  <option value="Pelajaran">Pelajaran</option>
+                  <option value="Tahfidz Qur'an" className="bg-[#042422] text-white">Tahfidz Qur'an</option>
+                  <option value="Tilawah" className="bg-[#042422] text-white">Tilawah</option>
+                  <option value="Hafalan" className="bg-[#042422] text-white">Hafalan</option>
+                  <option value="Pelajaran" className="bg-[#042422] text-white">Pelajaran</option>
                 </select>
               </div>
 
               {/* KOLOM JENIS CAPAIAN (BARU, LAMA, MENGULANG) */}
               <div className="space-y-1">
-                <label className="text-[10px] font-black text-slate-500 uppercase ml-1">
+                <label className="text-[10px] font-black text-teal-300/80 uppercase ml-1">
                   Jenis Capaian
                 </label>
                 <select
@@ -774,18 +783,18 @@ export const InputFormView: React.FC<InputFormViewProps> = ({
                   onChange={(e) =>
                     setProgressForm((prev) => ({ ...prev, jenisCapaian: e.target.value }))
                   }
-                  className="w-full p-3.5 bg-white border-2 border-slate-200 rounded-2xl outline-none focus:border-emerald-500 font-extrabold text-xs text-slate-900"
+                  className="w-full p-3.5 bg-[#042422] border border-teal-500/30 rounded-2xl outline-none focus:border-emerald-400 font-extrabold text-xs text-white"
                 >
-                  <option value="Baru">Baru</option>
-                  <option value="Lama">Lama</option>
-                  <option value="Mengulang">Mengulang</option>
+                  <option value="Baru" className="bg-[#042422] text-white">Baru</option>
+                  <option value="Lama" className="bg-[#042422] text-white">Lama</option>
+                  <option value="Mengulang" className="bg-[#042422] text-white">Mengulang</option>
                 </select>
               </div>
             </div>
 
             {/* DYNAMIC FIELD: SURAH / JILID / MATERI */}
-            <div className="space-y-1.5 p-4 bg-slate-50 border border-slate-200 rounded-2xl">
-              <label className="text-[10px] font-black text-slate-600 uppercase tracking-wider block">
+            <div className="space-y-1.5 p-4 bg-[#083834]/70 border border-teal-500/25 rounded-2xl backdrop-blur-xl">
+              <label className="text-[10px] font-black text-teal-200 uppercase tracking-wider block font-['Outfit']">
                 Surah / Jilid / Materi ({progressForm.capaian})
               </label>
 
@@ -798,18 +807,18 @@ export const InputFormView: React.FC<InputFormViewProps> = ({
                       value={surahSearch}
                       onChange={(e) => setSurahSearch(e.target.value)}
                       placeholder="Cari nama surah (contoh: Naba, Yasin)..."
-                      className="w-full p-2.5 pl-8 bg-white border border-slate-200 rounded-xl outline-none text-xs font-medium"
+                      className="w-full p-2.5 pl-8 bg-[#042422] border border-teal-500/30 rounded-xl outline-none text-xs font-medium text-white placeholder-teal-200/40 focus:border-emerald-400"
                     />
-                    <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                    <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-teal-400" />
                   </div>
 
                   {selectedSurahs.length > 0 && (
-                    <div className="p-2.5 bg-emerald-100/80 border border-emerald-300 rounded-xl text-xs font-bold text-emerald-900">
-                      Surah Terpilih ({selectedSurahs.length}): <span className="font-extrabold">{selectedSurahs.join(', ')}</span>
+                    <div className="p-2.5 bg-emerald-500/20 border border-emerald-500/30 rounded-xl text-xs font-bold text-emerald-300">
+                      Surah Terpilih ({selectedSurahs.length}): <span className="font-extrabold text-white">{selectedSurahs.join(', ')}</span>
                     </div>
                   )}
 
-                  <div className="max-h-48 overflow-y-auto border border-slate-200 rounded-xl divide-y divide-slate-100 bg-white p-1">
+                  <div className="max-h-48 overflow-y-auto border border-teal-500/25 rounded-xl divide-y divide-teal-500/20 bg-[#042422] p-1">
                     {SURAH_LIST.filter((s) => s.toLowerCase().includes(surahSearch.toLowerCase())).map((surahFull) => {
                       const cleanName = surahFull.replace(/^\d+\.\s*/, '');
                       const isChecked = selectedSurahs.includes(cleanName);
@@ -817,14 +826,14 @@ export const InputFormView: React.FC<InputFormViewProps> = ({
                         <label
                           key={surahFull}
                           className={`flex items-center space-x-2.5 p-2 rounded-lg cursor-pointer transition-colors text-xs font-bold ${
-                            isChecked ? 'bg-emerald-50 text-emerald-900' : 'hover:bg-slate-50 text-slate-700'
+                            isChecked ? 'bg-emerald-500/20 text-emerald-300' : 'hover:bg-teal-500/10 text-teal-100'
                           }`}
                         >
                           <input
                             type="checkbox"
                             checked={isChecked}
                             onChange={() => handleToggleSurah(surahFull)}
-                            className="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 cursor-pointer"
+                            className="w-4 h-4 rounded text-emerald-400 focus:ring-emerald-400 cursor-pointer"
                           />
                           <span>{surahFull}</span>
                         </label>
@@ -841,17 +850,17 @@ export const InputFormView: React.FC<InputFormViewProps> = ({
                     <select
                       value={progressForm.surahJilid}
                       onChange={(e) => setProgressForm((prev) => ({ ...prev, surahJilid: e.target.value }))}
-                      className="w-full p-3.5 bg-white border-2 border-slate-200 rounded-xl outline-none font-bold text-xs text-slate-800 focus:border-emerald-500"
+                      className="w-full p-3.5 bg-[#042422] border border-teal-500/30 rounded-xl outline-none font-bold text-xs text-white focus:border-emerald-400"
                     >
-                      <option value="">-- Pilih Jilid / Level Tilawah --</option>
+                      <option value="" className="bg-[#042422] text-white">-- Pilih Jilid / Level Tilawah --</option>
                       {getProgramMaterials(selectedProgram, 'materi_tilawah').map((mat, i) => (
-                        <option key={`m-${i}`} value={mat}>
+                        <option key={`m-${i}`} value={mat} className="bg-[#042422] text-white">
                           {mat}
                         </option>
                       ))}
                     </select>
                   ) : (
-                    <div className="p-2.5 bg-amber-50 border border-amber-200 text-amber-800 rounded-xl text-[11px] font-semibold">
+                    <div className="p-2.5 bg-[#042422] border border-amber-500/30 text-amber-300 rounded-xl text-[11px] font-semibold">
                       💡 Belum ada materi tilawah diisi pada menu program. Silakan isi materi tilawah pada menu program atau ketik manual di bawah.
                     </div>
                   )}
@@ -860,7 +869,7 @@ export const InputFormView: React.FC<InputFormViewProps> = ({
                     value={progressForm.surahJilid}
                     onChange={(e) => setProgressForm((prev) => ({ ...prev, surahJilid: e.target.value }))}
                     placeholder="Atau ketik jilid / materi tilawah manual..."
-                    className="w-full p-2.5 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-700 outline-none"
+                    className="w-full p-2.5 bg-[#042422] border border-teal-500/30 rounded-xl text-xs font-medium text-white placeholder-teal-200/40 outline-none focus:border-emerald-400"
                   />
                 </div>
               )}
@@ -872,15 +881,15 @@ export const InputFormView: React.FC<InputFormViewProps> = ({
                     <select
                       value={progressForm.surahJilid}
                       onChange={(e) => setProgressForm((prev) => ({ ...prev, surahJilid: e.target.value }))}
-                      className="w-full p-3.5 bg-white border-2 border-emerald-300 rounded-xl outline-none font-bold text-xs text-emerald-900"
+                      className="w-full p-3.5 bg-[#042422] border border-teal-500/30 rounded-xl outline-none font-bold text-xs text-white focus:border-emerald-400"
                     >
-                      <option value="">-- Pilih Materi Hafalan Program --</option>
+                      <option value="" className="bg-[#042422] text-white">-- Pilih Materi Hafalan Program --</option>
                       {getProgramMaterials(selectedProgram, 'materi_hafalan').map((mat, i) => (
-                        <option key={i} value={mat}>{mat}</option>
+                        <option key={i} value={mat} className="bg-[#042422] text-white">{mat}</option>
                       ))}
                     </select>
                   ) : (
-                    <div className="p-2.5 bg-amber-50 border border-amber-200 text-amber-800 rounded-xl text-[11px] font-semibold">
+                    <div className="p-2.5 bg-[#042422] border border-amber-500/30 text-amber-300 rounded-xl text-[11px] font-semibold">
                       💡 Belum ada materi hafalan khusus pada program {selectedProgram || 'ini'}. Anda dapat mengetik materi secara manual di bawah.
                     </div>
                   )}
@@ -889,7 +898,7 @@ export const InputFormView: React.FC<InputFormViewProps> = ({
                     value={progressForm.surahJilid}
                     onChange={(e) => setProgressForm((prev) => ({ ...prev, surahJilid: e.target.value }))}
                     placeholder="Ketik nama materi hafalan (misal: Hadits Tersenyum, Hadits Niat)..."
-                    className="w-full p-3 bg-white border-2 border-slate-200 rounded-xl text-xs font-bold text-slate-800 outline-none focus:border-emerald-500"
+                    className="w-full p-3 bg-[#042422] border border-teal-500/30 rounded-xl text-xs font-bold text-white placeholder-teal-200/40 outline-none focus:border-emerald-400"
                   />
                 </div>
               )}
@@ -901,15 +910,15 @@ export const InputFormView: React.FC<InputFormViewProps> = ({
                     <select
                       value={progressForm.surahJilid}
                       onChange={(e) => setProgressForm((prev) => ({ ...prev, surahJilid: e.target.value }))}
-                      className="w-full p-3.5 bg-white border-2 border-emerald-300 rounded-xl outline-none font-bold text-xs text-emerald-900"
+                      className="w-full p-3.5 bg-[#042422] border border-teal-500/30 rounded-xl outline-none font-bold text-xs text-white focus:border-emerald-400"
                     >
-                      <option value="">-- Pilih Materi Pelajaran Program --</option>
+                      <option value="" className="bg-[#042422] text-white">-- Pilih Materi Pelajaran Program --</option>
                       {getProgramMaterials(selectedProgram, 'materi_pelajaran').map((mat, i) => (
-                        <option key={i} value={mat}>{mat}</option>
+                        <option key={i} value={mat} className="bg-[#042422] text-white">{mat}</option>
                       ))}
                     </select>
                   ) : (
-                    <div className="p-2.5 bg-amber-50 border border-amber-200 text-amber-800 rounded-xl text-[11px] font-semibold">
+                    <div className="p-2.5 bg-[#042422] border border-amber-500/30 text-amber-300 rounded-xl text-[11px] font-semibold">
                       💡 Belum ada materi pelajaran khusus pada program {selectedProgram || 'ini'}. Anda dapat mengetik pelajaran secara manual di bawah.
                     </div>
                   )}
@@ -918,7 +927,7 @@ export const InputFormView: React.FC<InputFormViewProps> = ({
                     value={progressForm.surahJilid}
                     onChange={(e) => setProgressForm((prev) => ({ ...prev, surahJilid: e.target.value }))}
                     placeholder="Ketik materi pelajaran (misal: Fiqih Wudhu, Aqidah)..."
-                    className="w-full p-3 bg-white border-2 border-slate-200 rounded-xl text-xs font-bold text-slate-800 outline-none focus:border-emerald-500"
+                    className="w-full p-3 bg-[#042422] border border-teal-500/30 rounded-xl text-xs font-bold text-white placeholder-teal-200/40 outline-none focus:border-emerald-400"
                   />
                 </div>
               )}
@@ -926,7 +935,7 @@ export const InputFormView: React.FC<InputFormViewProps> = ({
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="space-y-1">
-                <label className="text-[10px] font-black text-slate-400 uppercase ml-1">
+                <label className="text-[10px] font-black text-teal-300/80 uppercase ml-1">
                   Ayat / Halaman
                 </label>
                 <input
@@ -936,12 +945,12 @@ export const InputFormView: React.FC<InputFormViewProps> = ({
                     setProgressForm((prev) => ({ ...prev, ayatHalaman: e.target.value }))
                   }
                   placeholder="Contoh: Ayat 1-20 / Hal 15"
-                  className="w-full p-3.5 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none focus:border-emerald-500 text-xs font-bold"
+                  className="w-full p-3.5 bg-[#042422] border border-teal-500/30 rounded-2xl outline-none focus:border-emerald-400 text-xs font-bold text-white placeholder-teal-200/40"
                 />
               </div>
 
               <div className="space-y-1">
-                <label className="text-[10px] font-black text-slate-400 uppercase ml-1">
+                <label className="text-[10px] font-black text-teal-300/80 uppercase ml-1">
                   Nilai
                 </label>
                 <select
@@ -949,18 +958,18 @@ export const InputFormView: React.FC<InputFormViewProps> = ({
                   onChange={(e) =>
                     setProgressForm((prev) => ({ ...prev, nilai: e.target.value }))
                   }
-                  className="w-full p-3.5 bg-white border-2 border-slate-100 rounded-2xl outline-none focus:border-emerald-500 font-bold text-xs"
+                  className="w-full p-3.5 bg-[#042422] border border-teal-500/30 rounded-2xl outline-none focus:border-emerald-400 font-bold text-xs text-white"
                 >
-                  <option value="Mumtaz (A+)">Mumtaz (A+)</option>
-                  <option value="A (Sangat Baik)">A (Sangat Baik)</option>
-                  <option value="B (Baik)">B (Baik)</option>
-                  <option value="C (Cukup)">C (Cukup)</option>
+                  <option value="Mumtaz (A+)" className="bg-[#042422] text-white">Mumtaz (A+)</option>
+                  <option value="A (Sangat Baik)" className="bg-[#042422] text-white">A (Sangat Baik)</option>
+                  <option value="B (Baik)" className="bg-[#042422] text-white">B (Baik)</option>
+                  <option value="C (Cukup)" className="bg-[#042422] text-white">C (Cukup)</option>
                 </select>
               </div>
             </div>
 
             <div className="space-y-1">
-              <label className="text-[10px] font-black text-slate-400 uppercase ml-1">
+              <label className="text-[10px] font-black text-teal-300/80 uppercase ml-1">
                 Nama Ustaz / Penguji
               </label>
               <input
@@ -970,12 +979,12 @@ export const InputFormView: React.FC<InputFormViewProps> = ({
                   setProgressForm((prev) => ({ ...prev, ustaz: e.target.value }))
                 }
                 placeholder="Nama Ustaz Pengajar"
-                className="w-full p-3.5 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none focus:border-emerald-500 text-xs font-bold"
+                className="w-full p-3.5 bg-[#042422] border border-teal-500/30 rounded-2xl outline-none focus:border-emerald-400 text-xs font-bold text-white placeholder-teal-200/40"
               />
             </div>
 
             <div className="space-y-1">
-              <label className="text-[10px] font-black text-slate-400 uppercase ml-1">
+              <label className="text-[10px] font-black text-teal-300/80 uppercase ml-1">
                 Catatan / Evaluasi Ustaz
               </label>
               <textarea
@@ -985,7 +994,7 @@ export const InputFormView: React.FC<InputFormViewProps> = ({
                   setProgressForm((prev) => ({ ...prev, catatan: e.target.value }))
                 }
                 placeholder="Catatan tambahan evaluasi tajwid / kelancaran..."
-                className="w-full p-3 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none focus:border-emerald-500 text-xs font-medium"
+                className="w-full p-3 bg-[#042422] border border-teal-500/30 rounded-2xl outline-none focus:border-emerald-400 text-xs font-medium text-white placeholder-teal-200/40"
               />
             </div>
           </div>
@@ -993,13 +1002,13 @@ export const InputFormView: React.FC<InputFormViewProps> = ({
           <button
             type="submit"
             disabled={isSubmitting || !selectedSantri}
-            className={`w-full py-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-2xl shadow-lg shadow-emerald-200 transition-all uppercase text-xs flex items-center justify-center space-x-2 ${
+            className={`w-full py-4 bg-gradient-to-r from-emerald-400 to-teal-300 hover:from-emerald-300 hover:to-teal-200 text-slate-950 font-black rounded-2xl shadow-lg shadow-emerald-500/20 transition-all uppercase text-xs flex items-center justify-center space-x-2 border border-emerald-300/30 ${
               isSubmitting || !selectedSantri ? 'opacity-80 cursor-not-allowed' : 'active:scale-95'
             }`}
           >
             {isSubmitting ? (
               <>
-                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                <div className="w-4 h-4 border-2 border-slate-950 border-t-transparent rounded-full animate-spin" />
                 <span>Menyimpan Progress...</span>
               </>
             ) : (
@@ -1011,11 +1020,11 @@ export const InputFormView: React.FC<InputFormViewProps> = ({
 
       {/* MODE 3: MU'TABAAH YAUMIYYAH */}
       {category === 'mutabaah' && !editMode.active && (
-        <form onSubmit={handleSubmitMutabaah} className="space-y-5">
+        <form onSubmit={handleSubmitMutabaah} className="space-y-4">
           {/* TOP ROW */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-4 bg-emerald-50/50 border border-emerald-100 rounded-3xl">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-4 bg-[#083834]/70 border border-teal-500/25 rounded-3xl backdrop-blur-xl">
             <div className="space-y-1">
-              <label className="text-[10px] font-black text-slate-500 uppercase ml-1">
+              <label className="text-[10px] font-black text-teal-300/80 uppercase ml-1">
                 Pilih Program / Kelas
               </label>
               <select
@@ -1024,11 +1033,11 @@ export const InputFormView: React.FC<InputFormViewProps> = ({
                   setSelectedProgram(e.target.value);
                   setSelectedSantri(null);
                 }}
-                className="w-full p-3.5 bg-white border-2 border-emerald-200/80 rounded-2xl outline-none focus:border-emerald-600 font-bold text-xs text-slate-800 shadow-2xs"
+                className="w-full p-3.5 bg-[#042422] border border-teal-500/30 rounded-2xl outline-none focus:border-emerald-400 font-bold text-xs text-white"
               >
-                <option value="">-- Semua Program --</option>
+                <option value="" className="bg-[#042422] text-white">-- Semua Program --</option>
                 {(data.program || []).map((p, idx) => (
-                  <option key={idx} value={p.nama_program}>
+                  <option key={idx} value={p.nama_program} className="bg-[#042422] text-white">
                     {p.nama_program.toUpperCase()}
                   </option>
                 ))}
@@ -1036,21 +1045,21 @@ export const InputFormView: React.FC<InputFormViewProps> = ({
             </div>
 
             <div className="space-y-1">
-              <label className="text-[10px] font-black text-slate-500 uppercase ml-1">
+              <label className="text-[10px] font-black text-teal-300/80 uppercase ml-1">
                 Setting Tanggal
               </label>
               <input
                 type="date"
                 value={selectedDate}
                 onChange={(e) => setSelectedDate(e.target.value)}
-                className="w-full p-3.5 bg-white border-2 border-emerald-200/80 rounded-2xl outline-none focus:border-emerald-600 font-bold text-xs text-slate-800 shadow-2xs"
+                className="w-full p-3.5 bg-[#042422] border border-teal-500/30 rounded-2xl outline-none focus:border-emerald-400 font-bold text-xs text-white"
               />
             </div>
           </div>
 
           {/* SEARCH SANTRI */}
           <div className="space-y-2">
-            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 block">
+            <label className="text-[10px] font-black text-teal-300/80 uppercase tracking-widest ml-1 block font-['Outfit']">
               Pencarian Santri (Ketik Nama / NIS)
             </label>
             <div className="relative">
@@ -1059,15 +1068,15 @@ export const InputFormView: React.FC<InputFormViewProps> = ({
                 value={santriSearch}
                 onChange={(e) => setSantriSearch(e.target.value)}
                 placeholder="Ketik nama (misal: Ahmad)..."
-                className="w-full p-4 pl-11 bg-slate-50 border-2 border-slate-200 rounded-2xl outline-none focus:border-emerald-500 font-bold text-sm text-slate-900"
+                className="w-full p-4 pl-11 bg-[#083834]/80 border border-teal-500/30 rounded-2xl outline-none focus:border-emerald-400 font-bold text-sm text-white placeholder-teal-200/40 backdrop-blur-xl"
               />
-              <Search className="w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+              <Search className="w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2 text-teal-400" />
             </div>
 
             {/* DAFTAR NAMA SANTRI */}
-            <div className="max-h-40 overflow-y-auto border border-slate-200 rounded-2xl divide-y divide-slate-100 bg-white">
+            <div className="max-h-40 overflow-y-auto border border-teal-500/25 rounded-2xl divide-y divide-teal-500/20 bg-[#083834]/80 backdrop-blur-xl">
               {filteredSantriList.length === 0 ? (
-                <div className="p-4 text-center text-xs text-slate-400 font-bold">
+                <div className="p-4 text-center text-xs text-teal-200/50 font-bold">
                   Santri tidak ditemukan.
                 </div>
               ) : (
@@ -1080,18 +1089,18 @@ export const InputFormView: React.FC<InputFormViewProps> = ({
                       onClick={() => setSelectedSantri(s)}
                       className={`w-full p-3 text-left flex items-center justify-between transition-all ${
                         isSelected
-                          ? 'bg-emerald-50 font-black text-emerald-900'
-                          : 'hover:bg-slate-50 text-slate-700'
+                          ? 'bg-emerald-500/20 font-black text-white'
+                          : 'hover:bg-teal-500/10 text-teal-100'
                       }`}
                     >
                       <div>
-                        <p className="text-xs font-bold uppercase">{s.nama}</p>
-                        <p className="text-[10px] text-slate-400">
+                        <p className="text-xs font-bold uppercase font-['Outfit']">{s.nama}</p>
+                        <p className="text-[10px] text-teal-300/70">
                           NIS: {s.nis || '-'} • Program: {s.program || 'Umum'}
                         </p>
                       </div>
                       {isSelected && (
-                        <span className="px-2.5 py-1 bg-emerald-600 text-white rounded-lg text-[10px] font-black uppercase">
+                        <span className="px-2.5 py-1 bg-gradient-to-r from-emerald-400 to-teal-300 text-slate-950 rounded-lg text-[10px] font-black uppercase font-['Outfit']">
                           ✓ Terpilih
                         </span>
                       )}
@@ -1104,33 +1113,33 @@ export const InputFormView: React.FC<InputFormViewProps> = ({
 
           {/* SELECTED SANTRI BANNER */}
           {selectedSantri ? (
-            <div className="p-4 bg-emerald-600 text-white rounded-2xl shadow-md flex items-center justify-between">
+            <div className="p-4 bg-gradient-to-r from-[#031e1c] via-[#083834] to-[#042422] text-white rounded-2xl shadow-md border border-teal-500/30 flex items-center justify-between">
               <div>
-                <p className="text-[10px] font-bold uppercase text-emerald-200">Santri Terpilih</p>
+                <p className="text-[10px] font-bold uppercase text-emerald-300 font-['Outfit']">Santri Terpilih</p>
                 <h4 className="text-sm font-extrabold tracking-tight font-['Outfit']">
                   {selectedSantri.nama.toUpperCase()} (NIS: {selectedSantri.nis || '-'})
                 </h4>
               </div>
-              <span className="text-xs bg-emerald-700 px-3 py-1.5 rounded-xl font-bold">
+              <span className="text-xs bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 px-3 py-1.5 rounded-xl font-bold font-['Outfit']">
                 Ready Input
               </span>
             </div>
           ) : (
-            <div className="p-4 bg-amber-50 border border-amber-200 text-amber-800 rounded-2xl text-xs font-bold text-center">
+            <div className="p-4 bg-[#083834]/50 border border-amber-500/30 text-amber-300 rounded-2xl text-xs font-bold text-center">
               ⚠️ Klik salah satu nama santri di atas untuk melanjutkan input Mu'tabaah.
             </div>
           )}
 
           {/* MUTABAAH SHOLAT TOGGLES & INPUTS */}
           <div className="space-y-4 pt-2">
-            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 block">
+            <label className="text-[10px] font-black text-teal-200 uppercase tracking-widest ml-1 block font-['Outfit']">
               Pelaksanaan Sholat Fardhu
             </label>
 
             <div className="grid grid-cols-5 gap-2">
               {(['subuh', 'dzuhur', 'ashar', 'maghrib', 'isya'] as const).map((sholat) => (
                 <div key={sholat} className="space-y-1 text-center">
-                  <span className="text-[9px] font-black uppercase text-slate-500 block">
+                  <span className="text-[9px] font-black uppercase text-teal-300/80 block">
                     {sholat}
                   </span>
                   <button
@@ -1143,8 +1152,8 @@ export const InputFormView: React.FC<InputFormViewProps> = ({
                     }
                     className={`w-full py-2.5 rounded-xl font-extrabold text-xs transition-all ${
                       mutabaahForm[sholat] === 'Y'
-                        ? 'bg-emerald-600 text-white shadow-xs'
-                        : 'bg-slate-100 text-slate-400'
+                        ? 'bg-gradient-to-r from-emerald-400 to-teal-300 text-slate-950 font-black shadow-md border border-emerald-300/30'
+                        : 'bg-[#042422] text-teal-300/60 border border-teal-500/25 hover:border-teal-500/40'
                     }`}
                   >
                     {mutabaahForm[sholat] === 'Y' ? 'YA' : 'TDK'}
@@ -1154,7 +1163,7 @@ export const InputFormView: React.FC<InputFormViewProps> = ({
             </div>
 
             <div className="space-y-1">
-              <label className="text-[9px] font-black text-slate-400 uppercase ml-1">
+              <label className="text-[9px] font-black text-teal-300/80 uppercase ml-1">
                 Tadarusan / Bacaan Al-Qur'an
               </label>
               <input
@@ -1164,12 +1173,12 @@ export const InputFormView: React.FC<InputFormViewProps> = ({
                   setMutabaahForm((prev) => ({ ...prev, tadarusan: e.target.value }))
                 }
                 placeholder="Contoh: Juz 30 / Surat Al-Baqarah 1-20"
-                className="w-full p-3.5 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none focus:border-emerald-500 text-xs font-bold"
+                className="w-full p-3.5 bg-[#042422] border border-teal-500/30 rounded-2xl outline-none focus:border-emerald-400 text-xs font-bold text-white placeholder-teal-200/40"
               />
             </div>
 
             <div className="space-y-1">
-              <label className="text-[9px] font-black text-slate-400 uppercase ml-1">
+              <label className="text-[9px] font-black text-teal-300/80 uppercase ml-1">
                 Catatan Harian
               </label>
               <input
@@ -1179,7 +1188,7 @@ export const InputFormView: React.FC<InputFormViewProps> = ({
                   setMutabaahForm((prev) => ({ ...prev, catatan: e.target.value }))
                 }
                 placeholder="Catatan kebiasaan / amalan yaumiyah..."
-                className="w-full p-3 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none focus:border-emerald-500 text-xs font-medium"
+                className="w-full p-3 bg-[#042422] border border-teal-500/30 rounded-2xl outline-none focus:border-emerald-400 text-xs font-medium text-white placeholder-teal-200/40"
               />
             </div>
           </div>
@@ -1187,13 +1196,13 @@ export const InputFormView: React.FC<InputFormViewProps> = ({
           <button
             type="submit"
             disabled={isSubmitting || !selectedSantri}
-            className={`w-full py-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-2xl shadow-lg shadow-emerald-200 transition-all uppercase text-xs flex items-center justify-center space-x-2 ${
+            className={`w-full py-4 bg-gradient-to-r from-emerald-400 to-teal-300 hover:from-emerald-300 hover:to-teal-200 text-slate-950 font-black rounded-2xl shadow-lg shadow-emerald-500/20 transition-all uppercase text-xs flex items-center justify-center space-x-2 border border-emerald-300/30 ${
               isSubmitting || !selectedSantri ? 'opacity-80 cursor-not-allowed' : 'active:scale-95'
             }`}
           >
             {isSubmitting ? (
               <>
-                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                <div className="w-4 h-4 border-2 border-slate-950 border-t-transparent rounded-full animate-spin" />
                 <span>Menyimpan Mu'tabaah...</span>
               </>
             ) : (
@@ -1205,11 +1214,11 @@ export const InputFormView: React.FC<InputFormViewProps> = ({
 
       {/* MODE 4: KEUANGAN (PILIH PROGRAM, SETTING TANGGAL, PENCARIAN SANTRI, JENIS, NOMINAL, STATUS DROPDOWN, KETERANGAN) */}
       {category === 'keuangan' && !editMode.active && (
-        <form onSubmit={handleSubmitKeuangan} className="space-y-5">
+        <form onSubmit={handleSubmitKeuangan} className="space-y-4">
           {/* TOP ROW: PROGRAM & SETTING TANGGAL */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-4 bg-emerald-50/50 border border-emerald-100 rounded-3xl">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-4 bg-[#083834]/70 border border-teal-500/25 rounded-3xl backdrop-blur-xl">
             <div className="space-y-1">
-              <label className="text-[10px] font-black text-slate-500 uppercase ml-1">
+              <label className="text-[10px] font-black text-teal-300/80 uppercase ml-1">
                 Pilih Program / Kelas
               </label>
               <select
@@ -1218,11 +1227,11 @@ export const InputFormView: React.FC<InputFormViewProps> = ({
                   setSelectedProgram(e.target.value);
                   setSelectedSantri(null);
                 }}
-                className="w-full p-3.5 bg-white border-2 border-emerald-200/80 rounded-2xl outline-none focus:border-emerald-600 font-bold text-xs text-slate-800 shadow-2xs"
+                className="w-full p-3.5 bg-[#042422] border border-teal-500/30 rounded-2xl outline-none focus:border-emerald-400 font-bold text-xs text-white"
               >
-                <option value="">-- Semua Program / Kelas --</option>
+                <option value="" className="bg-[#042422] text-white">-- Semua Program / Kelas --</option>
                 {(data.program || []).map((p, idx) => (
-                  <option key={idx} value={p.nama_program}>
+                  <option key={idx} value={p.nama_program} className="bg-[#042422] text-white">
                     {(p.nama_program || '').toUpperCase()}
                   </option>
                 ))}
@@ -1230,21 +1239,21 @@ export const InputFormView: React.FC<InputFormViewProps> = ({
             </div>
 
             <div className="space-y-1">
-              <label className="text-[10px] font-black text-slate-500 uppercase ml-1">
+              <label className="text-[10px] font-black text-teal-300/80 uppercase ml-1">
                 Setting Tanggal
               </label>
               <input
                 type="date"
                 value={selectedDate}
                 onChange={(e) => setSelectedDate(e.target.value)}
-                className="w-full p-3.5 bg-white border-2 border-emerald-200/80 rounded-2xl outline-none focus:border-emerald-600 font-bold text-xs text-slate-800 shadow-2xs"
+                className="w-full p-3.5 bg-[#042422] border border-teal-500/30 rounded-2xl outline-none focus:border-emerald-400 font-bold text-xs text-white"
               />
             </div>
           </div>
 
           {/* SEARCH SANTRI */}
           <div className="space-y-2">
-            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 block">
+            <label className="text-[10px] font-black text-teal-300/80 uppercase tracking-widest ml-1 block font-['Outfit']">
               Pencarian Santri (Ketik Nama / NIS)
             </label>
             <div className="relative">
@@ -1253,15 +1262,15 @@ export const InputFormView: React.FC<InputFormViewProps> = ({
                 value={santriSearch}
                 onChange={(e) => setSantriSearch(e.target.value)}
                 placeholder="Ketik nama santri (misal: Ahmad)..."
-                className="w-full p-4 pl-11 bg-slate-50 border-2 border-slate-200 rounded-2xl outline-none focus:border-emerald-500 font-bold text-sm text-slate-900"
+                className="w-full p-4 pl-11 bg-[#083834]/80 border border-teal-500/30 rounded-2xl outline-none focus:border-emerald-400 font-bold text-sm text-white placeholder-teal-200/40 backdrop-blur-xl"
               />
-              <Search className="w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+              <Search className="w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2 text-teal-400" />
             </div>
 
             {/* DAFTAR NAMA SANTRI */}
-            <div className="max-h-40 overflow-y-auto border border-slate-200 rounded-2xl divide-y divide-slate-100 bg-white">
+            <div className="max-h-40 overflow-y-auto border border-teal-500/25 rounded-2xl divide-y divide-teal-500/20 bg-[#083834]/80 backdrop-blur-xl">
               {filteredSantriList.length === 0 ? (
-                <div className="p-4 text-center text-xs text-slate-400 font-bold">
+                <div className="p-4 text-center text-xs text-teal-200/50 font-bold">
                   Santri tidak ditemukan.
                 </div>
               ) : (
@@ -1274,18 +1283,18 @@ export const InputFormView: React.FC<InputFormViewProps> = ({
                       onClick={() => setSelectedSantri(s)}
                       className={`w-full p-3 text-left flex items-center justify-between transition-all ${
                         isSelected
-                          ? 'bg-emerald-50 font-black text-emerald-900'
-                          : 'hover:bg-slate-50 text-slate-700'
+                          ? 'bg-emerald-500/20 font-black text-white'
+                          : 'hover:bg-teal-500/10 text-teal-100'
                       }`}
                     >
                       <div>
-                        <p className="text-xs font-bold uppercase">{s.nama}</p>
-                        <p className="text-[10px] text-slate-400">
+                        <p className="text-xs font-bold uppercase font-['Outfit']">{s.nama}</p>
+                        <p className="text-[10px] text-teal-300/70">
                           NIS: {s.nis || '-'} • Program: {s.program || 'Umum'}
                         </p>
                       </div>
                       {isSelected && (
-                        <span className="px-2.5 py-1 bg-emerald-600 text-white rounded-lg text-[10px] font-black uppercase">
+                        <span className="px-2.5 py-1 bg-gradient-to-r from-emerald-400 to-teal-300 text-slate-950 rounded-lg text-[10px] font-black uppercase font-['Outfit']">
                           ✓ Terpilih
                         </span>
                       )}
@@ -1298,39 +1307,39 @@ export const InputFormView: React.FC<InputFormViewProps> = ({
 
           {/* SELECTED SANTRI BANNER */}
           {selectedSantri ? (
-            <div className="p-4 bg-emerald-600 text-white rounded-2xl shadow-md flex items-center justify-between">
+            <div className="p-4 bg-gradient-to-r from-[#031e1c] via-[#083834] to-[#042422] text-white rounded-2xl shadow-md border border-teal-500/30 flex items-center justify-between">
               <div>
-                <p className="text-[10px] font-bold uppercase text-emerald-200">Santri Terpilih</p>
+                <p className="text-[10px] font-bold uppercase text-emerald-300 font-['Outfit']">Santri Terpilih</p>
                 <h4 className="text-sm font-extrabold tracking-tight font-['Outfit']">
                   {selectedSantri.nama.toUpperCase()} (NIS: {selectedSantri.nis || '-'})
                 </h4>
               </div>
-              <span className="text-xs bg-emerald-700 px-3 py-1.5 rounded-xl font-bold">
+              <span className="text-xs bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 px-3 py-1.5 rounded-xl font-bold font-['Outfit']">
                 Ready Input
               </span>
             </div>
           ) : (
-            <div className="p-4 bg-amber-50 border border-amber-200 text-amber-800 rounded-2xl text-xs font-bold text-center">
+            <div className="p-4 bg-[#083834]/50 border border-amber-500/30 text-amber-300 rounded-2xl text-xs font-bold text-center">
               ⚠️ Klik salah satu nama santri di atas untuk melakukan entri transaksi keuangan.
             </div>
           )}
 
           {/* REKAM NOMINAL PEMBAYARAN CEPAT (PRESET) */}
-          <div className="p-3.5 bg-gradient-to-r from-emerald-50 via-teal-50 to-white border-2 border-emerald-200/90 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 shadow-2xs">
+          <div className="p-3.5 bg-[#083834]/80 border border-teal-500/30 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 shadow-md backdrop-blur-xl">
             <div className="flex items-center space-x-2.5">
-              <div className="w-8 h-8 rounded-xl bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-xs">
+              <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-emerald-400 to-teal-400 text-slate-950 flex items-center justify-center shrink-0 shadow-xs font-bold">
                 <CreditCard className="w-4 h-4" />
               </div>
               <div>
                 <div className="flex items-center space-x-1.5">
-                  <span className="text-[10px] font-black uppercase text-emerald-900 font-['Outfit']">
+                  <span className="text-[10px] font-black uppercase text-teal-200 font-['Outfit']">
                     Nominal Tersimpan:
                   </span>
-                  <span className="text-[10.5px] font-black text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded">
+                  <span className="text-[10.5px] font-black text-emerald-300 bg-emerald-500/20 border border-emerald-500/30 px-2 py-0.5 rounded">
                     Rp {currentPreset.nominal.toLocaleString('id-ID')}
                   </span>
                 </div>
-                <p className="text-[10px] text-slate-500 font-medium">
+                <p className="text-[10px] text-teal-200/70 font-medium">
                   {currentPreset.kategori} • {currentPreset.status}
                 </p>
               </div>
@@ -1348,7 +1357,7 @@ export const InputFormView: React.FC<InputFormViewProps> = ({
                     keterangan: currentPreset.catatan || prev.keterangan,
                   }));
                 }}
-                className="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold rounded-xl text-[10.5px] transition-all shadow-xs flex items-center space-x-1"
+                className="px-2.5 py-1.5 bg-gradient-to-r from-emerald-400 to-teal-300 hover:from-emerald-300 hover:to-teal-200 text-slate-950 font-extrabold rounded-xl text-[10.5px] transition-all shadow-xs flex items-center space-x-1 border border-emerald-300/30"
                 title="Isi formulir dengan nominal tersimpan"
               >
                 <Sparkles className="w-3 h-3" />
@@ -1371,10 +1380,10 @@ export const InputFormView: React.FC<InputFormViewProps> = ({
                   setCurrentPreset(updated);
                   alert(`✅ Berhasil merekam nominal default: Rp ${updated.nominal.toLocaleString('id-ID')} (${updated.kategori} - ${updated.status})!`);
                 }}
-                className="px-2.5 py-1.5 bg-white border border-slate-300 hover:bg-slate-100 text-slate-700 font-extrabold rounded-xl text-[10.5px] transition-all flex items-center space-x-1"
+                className="px-2.5 py-1.5 bg-[#042422] border border-teal-500/30 hover:bg-teal-900/50 text-teal-200 font-extrabold rounded-xl text-[10.5px] transition-all flex items-center space-x-1"
                 title="Simpan nilai saat ini sebagai setelan terekam baru"
               >
-                <BookmarkCheck className="w-3.5 h-3.5 text-emerald-600" />
+                <BookmarkCheck className="w-3.5 h-3.5 text-emerald-300" />
                 <span>Rekam Nilai Ini</span>
               </button>
             </div>
@@ -1385,7 +1394,7 @@ export const InputFormView: React.FC<InputFormViewProps> = ({
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {/* JENIS PEMBAYARAN */}
               <div className="space-y-1">
-                <label className="text-[10px] font-black text-slate-400 uppercase ml-1">
+                <label className="text-[10px] font-black text-teal-300/80 uppercase ml-1">
                   Jenis / Kategori Pembayaran
                 </label>
                 <input
@@ -1395,13 +1404,13 @@ export const InputFormView: React.FC<InputFormViewProps> = ({
                     setKeuanganForm((prev) => ({ ...prev, jenis: e.target.value }))
                   }
                   placeholder="Contoh: Iuran SPP, Uang Gedung, Seragam..."
-                  className="w-full p-3.5 bg-slate-50 border-2 border-slate-200 rounded-2xl outline-none focus:border-emerald-500 text-xs font-bold text-slate-900"
+                  className="w-full p-3.5 bg-[#042422] border border-teal-500/30 rounded-2xl outline-none focus:border-emerald-400 text-xs font-bold text-white placeholder-teal-200/40"
                 />
               </div>
 
               {/* NOMINAL */}
               <div className="space-y-1">
-                <label className="text-[10px] font-black text-slate-400 uppercase ml-1">
+                <label className="text-[10px] font-black text-teal-300/80 uppercase ml-1">
                   Nominal Pembayaran (Rp)
                 </label>
                 <input
@@ -1411,14 +1420,14 @@ export const InputFormView: React.FC<InputFormViewProps> = ({
                     setKeuanganForm((prev) => ({ ...prev, nominal: e.target.value }))
                   }
                   placeholder="Contoh: 150000"
-                  className="w-full p-3.5 bg-slate-50 border-2 border-slate-200 rounded-2xl outline-none focus:border-emerald-500 text-xs font-extrabold text-emerald-700"
+                  className="w-full p-3.5 bg-[#042422] border border-teal-500/30 rounded-2xl outline-none focus:border-emerald-400 text-xs font-extrabold text-emerald-300 placeholder-teal-200/40"
                 />
               </div>
             </div>
 
             {/* STATUS DROPDOWN: CICIL, LUNAS */}
             <div className="space-y-1">
-              <label className="text-[10px] font-black text-slate-400 uppercase ml-1">
+              <label className="text-[10px] font-black text-teal-300/80 uppercase ml-1">
                 Status Pembayaran
               </label>
               <select
@@ -1426,17 +1435,17 @@ export const InputFormView: React.FC<InputFormViewProps> = ({
                 onChange={(e) =>
                   setKeuanganForm((prev) => ({ ...prev, status: e.target.value }))
                 }
-                className="w-full p-3.5 bg-white border-2 border-slate-200 rounded-2xl outline-none focus:border-emerald-500 text-xs font-bold text-slate-900"
+                className="w-full p-3.5 bg-[#042422] border border-teal-500/30 rounded-2xl outline-none focus:border-emerald-400 text-xs font-bold text-white"
               >
-                <option value="Lunas">Lunas</option>
-                <option value="Cicil">Cicil</option>
-                <option value="Belum Lunas">Belum Lunas</option>
+                <option value="Lunas" className="bg-[#042422] text-white">Lunas</option>
+                <option value="Cicil" className="bg-[#042422] text-white">Cicil</option>
+                <option value="Belum Lunas" className="bg-[#042422] text-white">Belum Lunas</option>
               </select>
             </div>
 
             {/* KETERANGAN */}
             <div className="space-y-1">
-              <label className="text-[10px] font-black text-slate-400 uppercase ml-1">
+              <label className="text-[10px] font-black text-teal-300/80 uppercase ml-1">
                 Keterangan / Catatan Transaksi
               </label>
               <textarea
@@ -1446,7 +1455,7 @@ export const InputFormView: React.FC<InputFormViewProps> = ({
                   setKeuanganForm((prev) => ({ ...prev, keterangan: e.target.value }))
                 }
                 placeholder="Catatan tambahan, misal: Tunai / Transfer via Bank..."
-                className="w-full p-3 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none focus:border-emerald-500 text-xs font-medium"
+                className="w-full p-3 bg-[#042422] border border-teal-500/30 rounded-2xl outline-none focus:border-emerald-400 text-xs font-medium text-white placeholder-teal-200/40"
               />
             </div>
           </div>
@@ -1454,13 +1463,13 @@ export const InputFormView: React.FC<InputFormViewProps> = ({
           <button
             type="submit"
             disabled={isSubmitting || !selectedSantri}
-            className={`w-full py-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-2xl shadow-lg shadow-emerald-200 transition-all uppercase text-xs flex items-center justify-center space-x-2 ${
+            className={`w-full py-4 bg-gradient-to-r from-emerald-400 to-teal-300 hover:from-emerald-300 hover:to-teal-200 text-slate-950 font-black rounded-2xl shadow-lg shadow-emerald-500/20 transition-all uppercase text-xs flex items-center justify-center space-x-2 border border-emerald-300/30 ${
               isSubmitting || !selectedSantri ? 'opacity-80 cursor-not-allowed' : 'active:scale-95'
             }`}
           >
             {isSubmitting ? (
               <>
-                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                <div className="w-4 h-4 border-2 border-slate-950 border-t-transparent rounded-full animate-spin" />
                 <span>Menyimpan Keuangan...</span>
               </>
             ) : (
@@ -1489,20 +1498,20 @@ export const InputFormView: React.FC<InputFormViewProps> = ({
             ) {
               return (
                 <div key={f} className="space-y-1">
-                  <label className="text-[9px] font-black text-slate-400 uppercase ml-1">
+                  <label className="text-[9px] font-black text-teal-300/80 uppercase ml-1">
                     {f}
                   </label>
                   <select
                     value={formData[f] || ''}
                     onChange={(e) => handleSelectSantriGeneral(e.target.value)}
-                    className="w-full p-4 bg-white border-2 border-slate-100 rounded-2xl outline-none focus:border-emerald-500 font-semibold text-sm"
+                    className="w-full p-4 bg-[#042422] border border-teal-500/30 rounded-2xl outline-none focus:border-emerald-400 font-semibold text-sm text-white"
                   >
-                    <option value="">-- Pilih Santri --</option>
+                    <option value="" className="bg-[#042422] text-white">-- Pilih Santri --</option>
                     {activeCat === 'informasi' && (
-                      <option value="Semua Santri">📢 SEMUA SANTRI</option>
+                      <option value="Semua Santri" className="bg-[#042422] text-white">📢 SEMUA SANTRI</option>
                     )}
                     {(data.santri || []).map((s) => (
-                      <option key={s.row_index || s.nama} value={s.nama}>
+                      <option key={s.row_index || s.nama} value={s.nama} className="bg-[#042422] text-white">
                         {s.nama.toUpperCase()} - {s.nis}
                       </option>
                     ))}
@@ -1519,14 +1528,14 @@ export const InputFormView: React.FC<InputFormViewProps> = ({
             ) {
               return (
                 <div key={f} className="space-y-1">
-                  <label className="text-[9px] font-black text-slate-400 uppercase ml-1">
+                  <label className="text-[9px] font-black text-teal-300/80 uppercase ml-1">
                     {f}
                   </label>
                   <input
                     type="text"
                     readOnly
                     value={formData[f] || ''}
-                    className="w-full p-4 bg-slate-100 border-2 border-slate-100 rounded-2xl outline-none text-slate-500 text-sm font-semibold cursor-not-allowed"
+                    className="w-full p-4 bg-[#083834]/50 border border-teal-500/25 rounded-2xl outline-none text-teal-300/70 text-sm font-semibold cursor-not-allowed"
                     placeholder="Terisi otomatis"
                   />
                 </div>
@@ -1537,17 +1546,17 @@ export const InputFormView: React.FC<InputFormViewProps> = ({
             if (activeCat === 'santri' && key === 'program') {
               return (
                 <div key={f} className="space-y-2 mt-2">
-                  <label className="text-[9px] font-black text-slate-400 uppercase ml-1">
+                  <label className="text-[9px] font-black text-teal-300/80 uppercase ml-1">
                     {f}
                   </label>
-                  <div className="flex p-1 bg-slate-100 rounded-2xl text-[10px] font-bold mb-2">
+                  <div className="flex p-1 bg-[#042422] border border-teal-500/25 rounded-2xl text-[10px] font-bold mb-2">
                     <button
                       type="button"
                       onClick={() => setProgramTab('select')}
                       className={`flex-1 py-2.5 rounded-xl uppercase transition-all ${
                         programTab === 'select'
-                          ? 'bg-white shadow-xs text-emerald-600 font-black'
-                          : 'text-slate-500'
+                          ? 'bg-gradient-to-r from-emerald-400 to-teal-300 shadow-xs text-slate-950 font-black'
+                          : 'text-teal-300/70'
                       }`}
                     >
                       Pilih Program
@@ -1557,8 +1566,8 @@ export const InputFormView: React.FC<InputFormViewProps> = ({
                       onClick={() => setProgramTab('new')}
                       className={`flex-1 py-2.5 rounded-xl uppercase transition-all ${
                         programTab === 'new'
-                          ? 'bg-white shadow-xs text-emerald-600 font-black'
-                          : 'text-slate-500'
+                          ? 'bg-gradient-to-r from-emerald-400 to-teal-300 shadow-xs text-slate-950 font-black'
+                          : 'text-teal-300/70'
                       }`}
                     >
                       Program Baru
@@ -1569,11 +1578,11 @@ export const InputFormView: React.FC<InputFormViewProps> = ({
                     <select
                       value={formData[f] || ''}
                       onChange={(e) => handleInputChange(f, e.target.value)}
-                      className="w-full p-4 bg-white border-2 border-slate-100 rounded-2xl outline-none text-sm font-medium focus:border-emerald-500"
+                      className="w-full p-4 bg-[#042422] border border-teal-500/30 rounded-2xl outline-none text-sm font-medium focus:border-emerald-400 text-white"
                     >
-                      <option value="">-- Pilih Program --</option>
+                      <option value="" className="bg-[#042422] text-white">-- Pilih Program --</option>
                       {(data.program || []).map((p, idx) => (
-                        <option key={idx} value={p.nama_program}>
+                        <option key={idx} value={p.nama_program} className="bg-[#042422] text-white">
                           {(p.nama_program || '').toUpperCase()}
                         </option>
                       ))}
@@ -1584,7 +1593,7 @@ export const InputFormView: React.FC<InputFormViewProps> = ({
                       value={formData[f] || ''}
                       onChange={(e) => handleInputChange(f, e.target.value)}
                       placeholder="Ketik nama program baru..."
-                      className="w-full p-4 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none text-sm font-medium focus:border-emerald-500"
+                      className="w-full p-4 bg-[#042422] border border-teal-500/30 rounded-2xl outline-none text-sm font-medium focus:border-emerald-400 text-white placeholder-teal-200/40"
                     />
                   )}
                 </div>
@@ -1601,7 +1610,7 @@ export const InputFormView: React.FC<InputFormViewProps> = ({
 
               return (
                 <div key={f} className="space-y-1">
-                  <label className="text-[9px] font-black text-slate-500 uppercase ml-1">
+                  <label className="text-[9px] font-black text-teal-300/80 uppercase ml-1">
                     {f}
                   </label>
                   <input
@@ -1609,7 +1618,7 @@ export const InputFormView: React.FC<InputFormViewProps> = ({
                     value={formData[f] || ''}
                     onChange={(e) => handleInputChange(f, e.target.value)}
                     placeholder={helpText}
-                    className="w-full p-4 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none focus:border-emerald-500 text-sm font-medium"
+                    className="w-full p-4 bg-[#042422] border border-teal-500/30 rounded-2xl outline-none focus:border-emerald-400 text-sm font-medium text-white placeholder-teal-200/40"
                   />
                 </div>
               );
@@ -1619,14 +1628,14 @@ export const InputFormView: React.FC<InputFormViewProps> = ({
             if (key.includes('tanggal')) {
               return (
                 <div key={f} className="space-y-1">
-                  <label className="text-[9px] font-black text-slate-400 uppercase ml-1">
+                  <label className="text-[9px] font-black text-teal-300/80 uppercase ml-1">
                     {f}
                   </label>
                   <input
                     type="date"
                     value={formData[f] || ''}
                     onChange={(e) => handleInputChange(f, e.target.value)}
-                    className="w-full p-4 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none focus:border-emerald-500 text-sm font-semibold"
+                    className="w-full p-4 bg-[#042422] border border-teal-500/30 rounded-2xl outline-none focus:border-emerald-400 text-sm font-semibold text-white"
                   />
                 </div>
               );
@@ -1636,16 +1645,16 @@ export const InputFormView: React.FC<InputFormViewProps> = ({
             if (activeCat === 'users' && key === 'role') {
               return (
                 <div key={f} className="space-y-1">
-                  <label className="text-[9px] font-black text-slate-400 uppercase ml-1">
+                  <label className="text-[9px] font-black text-teal-300/80 uppercase ml-1">
                     {f} (Peran Pengguna)
                   </label>
                   <select
                     value={formData[f] || 'ustadz'}
                     onChange={(e) => handleInputChange(f, e.target.value)}
-                    className="w-full p-4 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none focus:border-emerald-500 text-sm font-bold text-slate-900"
+                    className="w-full p-4 bg-[#042422] border border-teal-500/30 rounded-2xl outline-none focus:border-emerald-400 text-sm font-bold text-white"
                   >
-                    <option value="ustadz">Ustaz / Pengajar</option>
-                    <option value="admin">Administrator (Akses Penuh)</option>
+                    <option value="ustadz" className="bg-[#042422] text-white">Ustaz / Pengajar</option>
+                    <option value="admin" className="bg-[#042422] text-white">Administrator (Akses Penuh)</option>
                   </select>
                 </div>
               );
@@ -1655,16 +1664,16 @@ export const InputFormView: React.FC<InputFormViewProps> = ({
             if (activeCat === 'users' && key === 'status') {
               return (
                 <div key={f} className="space-y-1">
-                  <label className="text-[9px] font-black text-slate-400 uppercase ml-1">
+                  <label className="text-[9px] font-black text-teal-300/80 uppercase ml-1">
                     {f} (Status Akun)
                   </label>
                   <select
                     value={formData[f] || 'Aktif'}
                     onChange={(e) => handleInputChange(f, e.target.value)}
-                    className="w-full p-4 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none focus:border-emerald-500 text-sm font-bold text-slate-900"
+                    className="w-full p-4 bg-[#042422] border border-teal-500/30 rounded-2xl outline-none focus:border-emerald-400 text-sm font-bold text-white"
                   >
-                    <option value="Aktif">Aktif</option>
-                    <option value="Nonaktif">Nonaktif</option>
+                    <option value="Aktif" className="bg-[#042422] text-white">Aktif</option>
+                    <option value="Nonaktif" className="bg-[#042422] text-white">Nonaktif</option>
                   </select>
                 </div>
               );
@@ -1674,7 +1683,7 @@ export const InputFormView: React.FC<InputFormViewProps> = ({
             if (activeCat === 'users' && key === 'password') {
               return (
                 <div key={f} className="space-y-1">
-                  <label className="text-[9px] font-black text-slate-400 uppercase ml-1">
+                  <label className="text-[9px] font-black text-teal-300/80 uppercase ml-1">
                     {f} (Password Login)
                   </label>
                   <input
@@ -1682,9 +1691,9 @@ export const InputFormView: React.FC<InputFormViewProps> = ({
                     value={formData[f] || ''}
                     onChange={(e) => handleInputChange(f, e.target.value)}
                     placeholder="Ketik password akun login..."
-                    className="w-full p-4 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none focus:border-emerald-500 text-sm font-bold text-slate-900"
+                    className="w-full p-4 bg-[#042422] border border-teal-500/30 rounded-2xl outline-none focus:border-emerald-400 text-sm font-bold text-white placeholder-teal-200/40"
                   />
-                  <p className="text-[10px] text-slate-400 ml-1">
+                  <p className="text-[10px] text-teal-200/60 ml-1">
                     Gunakan password sederhana sesuai keinginan (tersimpan langsung di sheet 'users').
                   </p>
                 </div>
@@ -1694,7 +1703,7 @@ export const InputFormView: React.FC<InputFormViewProps> = ({
             // Default Text Input
             return (
               <div key={f} className="space-y-1">
-                <label className="text-[9px] font-black text-slate-400 uppercase ml-1">
+                <label className="text-[9px] font-black text-teal-300/80 uppercase ml-1">
                   {f}
                 </label>
                 <input
@@ -1702,7 +1711,7 @@ export const InputFormView: React.FC<InputFormViewProps> = ({
                   value={formData[f] || ''}
                   onChange={(e) => handleInputChange(f, e.target.value)}
                   placeholder={`Masukkan ${f.toLowerCase()}...`}
-                  className="w-full p-4 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none focus:border-emerald-500 text-sm font-medium"
+                  className="w-full p-4 bg-[#042422] border border-teal-500/30 rounded-2xl outline-none focus:border-emerald-400 text-sm font-medium text-white placeholder-teal-200/40"
                 />
               </div>
             );
@@ -1713,7 +1722,7 @@ export const InputFormView: React.FC<InputFormViewProps> = ({
               <button
                 type="button"
                 onClick={onCancelEdit}
-                className="w-1/3 py-4 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold rounded-2xl transition-all uppercase text-xs"
+                className="w-1/3 py-4 bg-[#042422] hover:bg-teal-900/50 text-teal-200 border border-teal-500/30 font-bold rounded-2xl transition-all uppercase text-xs"
               >
                 Batal
               </button>
@@ -1721,13 +1730,13 @@ export const InputFormView: React.FC<InputFormViewProps> = ({
             <button
               type="submit"
               disabled={isSubmitting}
-              className={`flex-1 py-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-2xl shadow-lg shadow-emerald-200 transition-all uppercase text-xs flex items-center justify-center space-x-2 ${
+              className={`flex-1 py-4 bg-gradient-to-r from-emerald-400 to-teal-300 hover:from-emerald-300 hover:to-teal-200 text-slate-950 font-black rounded-2xl shadow-lg shadow-emerald-500/20 transition-all uppercase text-xs flex items-center justify-center space-x-2 border border-emerald-300/30 ${
                 isSubmitting ? 'opacity-80 cursor-not-allowed' : 'active:scale-95'
               }`}
             >
               {isSubmitting ? (
                 <>
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  <div className="w-4 h-4 border-2 border-slate-950 border-t-transparent rounded-full animate-spin" />
                   <span>Menyimpan...</span>
                 </>
               ) : (

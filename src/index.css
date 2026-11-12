@@ -1,1 +1,30 @@
 @import "tailwindcss";
+
+:root {
+  --color-toska-deep: #031e1c;
+  --color-toska-base: #042422;
+  --color-toska-card: #083834;
+  --color-toska-border: #145851;
+  --color-toska-mint: #34d399;
+}
+
+body {
+  background-color: #031e1c;
+  color: #f1f5f9;
+}
+
+/* Custom scrollbar for dark toska theme */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+::-webkit-scrollbar-track {
+  background: rgba(4, 36, 34, 0.4);
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(20, 88, 81, 0.6);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(52, 211, 153, 0.6);
+}

@@ -121,5 +121,5 @@ export type CategoryKey =
   | 'mutabaah'
   | 'users';
 
-export type PageView = 'dashboard' | 'data-menu' | 'rekap' | 'input' | 'raport' | 'robota';
+export type PageView = 'dashboard' | 'data-menu' | 'rekap' | 'input' | 'raport' | 'scan';
 

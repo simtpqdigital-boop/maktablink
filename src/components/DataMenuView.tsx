@@ -258,7 +258,7 @@ export const DataMenuView: React.FC<DataMenuViewProps> = ({
   };
 
   return (
-    <div className="p-4 md:p-6 space-y-4 pb-28">
+    <div className="p-4 md:p-6 space-y-4 pb-28 text-slate-100">
       {/* Hidden File Input for Import */}
       <input
         type="file"
@@ -269,17 +269,18 @@ export const DataMenuView: React.FC<DataMenuViewProps> = ({
       />
 
       {/* Header Bar */}
-      <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-emerald-950 p-5 rounded-[1.75rem] text-white shadow-md border border-slate-800">
+      <div className="bg-gradient-to-r from-[#083834] via-[#062c29] to-[#03201e] p-5 rounded-2xl text-white shadow-lg border border-teal-500/25">
         <div className="flex items-center justify-between">
           <div>
-            <span className="text-[9px] font-extrabold text-emerald-400 uppercase tracking-widest font-['Outfit']">
-              🎓 Manajemen Santri
+            <span className="text-[9px] font-extrabold text-emerald-300 uppercase tracking-widest font-['Outfit'] flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+              Manajemen Santri
             </span>
             <h3 className="text-xl font-black text-white font-['Outfit'] tracking-tight">
               Data Santri Terdaftar
             </h3>
           </div>
-          <div className="w-10 h-10 rounded-2xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 flex items-center justify-center font-bold">
+          <div className="w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 flex items-center justify-center font-black font-['Outfit']">
             {santriList.length}
           </div>
         </div>
@@ -292,22 +293,22 @@ export const DataMenuView: React.FC<DataMenuViewProps> = ({
           <button
             type="button"
             onClick={() => setIsAddDropdownOpen((prev) => !prev)}
-            className="w-full bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-bold py-2.5 px-2 rounded-2xl shadow-md transition-all flex items-center justify-center space-x-1 text-[11px]"
+            className="w-full bg-gradient-to-r from-emerald-400 to-teal-300 hover:from-emerald-300 hover:to-teal-200 active:scale-95 text-slate-950 font-black py-2.5 px-2 rounded-xl shadow-md shadow-emerald-500/20 transition-all flex items-center justify-center space-x-1 text-[11px] font-['Outfit'] border border-emerald-300/30"
           >
-            <UserPlus className="w-3.5 h-3.5" />
+            <UserPlus className="w-3.5 h-3.5 stroke-[2.5]" />
             <span className="truncate">Tambah</span>
             <ChevronDown className="w-3 h-3 opacity-80" />
           </button>
 
           {isAddDropdownOpen && (
-            <div className="absolute top-12 left-0 w-48 bg-slate-900 border border-slate-700 text-white rounded-2xl shadow-xl p-1.5 z-50 space-y-1 font-['Plus_Jakarta_Sans',sans-serif]">
+            <div className="absolute top-12 left-0 w-48 bg-[#073330] border border-teal-500/30 text-white rounded-2xl shadow-2xl p-1.5 z-50 space-y-1 font-['Plus_Jakarta_Sans',sans-serif]">
               <button
                 type="button"
                 onClick={() => {
                   setIsAddDropdownOpen(false);
                   setIsAddManualModalOpen(true);
                 }}
-                className="w-full text-left px-3 py-2 text-xs font-bold hover:bg-slate-800 text-slate-100 rounded-xl flex items-center space-x-2 transition-colors"
+                className="w-full text-left px-3 py-2 text-xs font-bold hover:bg-[#0a3a37] text-teal-100 rounded-xl flex items-center space-x-2 transition-colors"
               >
                 <Plus className="w-3.5 h-3.5 text-emerald-400" />
                 <span>Input Manual</span>
@@ -316,9 +317,9 @@ export const DataMenuView: React.FC<DataMenuViewProps> = ({
               <button
                 type="button"
                 onClick={handleDownloadTemplate}
-                className="w-full text-left px-3 py-2 text-xs font-bold hover:bg-slate-800 text-slate-100 rounded-xl flex items-center space-x-2 transition-colors"
+                className="w-full text-left px-3 py-2 text-xs font-bold hover:bg-[#0a3a37] text-teal-100 rounded-xl flex items-center space-x-2 transition-colors"
               >
-                <FileSpreadsheet className="w-3.5 h-3.5 text-blue-400" />
+                <FileSpreadsheet className="w-3.5 h-3.5 text-teal-300" />
                 <span>Download Template</span>
               </button>
             </div>
@@ -329,10 +330,10 @@ export const DataMenuView: React.FC<DataMenuViewProps> = ({
         <button
           type="button"
           onClick={handleTriggerImport}
-          className="bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-bold py-2.5 px-2 rounded-2xl shadow-md transition-all flex items-center justify-center space-x-1.5 text-[11px]"
+          className="bg-[#083834]/80 hover:bg-emerald-500/20 active:scale-95 text-teal-100 hover:text-white font-bold py-2.5 px-2 rounded-xl shadow-sm border border-teal-500/30 transition-all flex items-center justify-center space-x-1.5 text-[11px] font-['Outfit']"
           title="Impor data santri dari file CSV/Template"
         >
-          <Upload className="w-3.5 h-3.5" />
+          <Upload className="w-3.5 h-3.5 text-emerald-400" />
           <span>Impor</span>
         </button>
 
@@ -341,42 +342,42 @@ export const DataMenuView: React.FC<DataMenuViewProps> = ({
           <select
             value={selectedProgram}
             onChange={(e) => setSelectedProgram(e.target.value)}
-            className="w-full bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold py-2.5 px-2.5 rounded-2xl border border-slate-200 outline-none text-[11px] appearance-none transition-all cursor-pointer truncate"
+            className="w-full bg-[#083834]/80 hover:bg-[#0a3a37] text-teal-100 font-bold py-2.5 px-2.5 rounded-xl border border-teal-500/30 outline-none text-[11px] appearance-none transition-all cursor-pointer truncate font-['Outfit']"
           >
-            <option value="">Filter Program</option>
-            <option value="ALL">Semua Program</option>
+            <option value="" className="bg-[#042422] text-white">Filter Program</option>
+            <option value="ALL" className="bg-[#042422] text-white">Semua Program</option>
             {uniquePrograms.map((prog, idx) => (
-              <option key={idx} value={prog}>
+              <option key={idx} value={prog} className="bg-[#042422] text-white">
                 {prog}
               </option>
             ))}
           </select>
-          <Filter className="w-3 h-3 text-slate-500 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+          <Filter className="w-3 h-3 text-teal-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
         </div>
       </div>
 
       {/* SEARCH BAR */}
       <div className="relative">
-        <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+        <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-teal-400" />
         <input
           type="text"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           placeholder="Cari nama santri, NIS, atau wali..."
-          className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-semibold text-slate-800 placeholder-slate-400 outline-none focus:bg-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
+          className="w-full pl-10 pr-4 py-3 bg-[#083834]/60 border border-teal-500/25 rounded-2xl text-xs font-semibold text-white placeholder-teal-200/40 outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/20 transition-all backdrop-blur-xl"
         />
       </div>
 
       {/* FILTER STATUS / INFO BADGE */}
       <div className="flex justify-between items-center px-1">
-        <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider font-['Outfit']">
+        <p className="text-[10px] font-black text-teal-200/70 uppercase tracking-wider font-['Outfit']">
           Menampilkan {filteredSantri.length} Santri
         </p>
         {selectedProgram && selectedProgram !== 'ALL' && (
           <button
             type="button"
             onClick={() => setSelectedProgram('')}
-            className="text-[10px] text-emerald-600 font-bold hover:underline"
+            className="text-[10px] text-emerald-400 font-bold hover:underline font-['Outfit']"
           >
             Reset Filter ({selectedProgram})
           </button>
@@ -386,10 +387,10 @@ export const DataMenuView: React.FC<DataMenuViewProps> = ({
       {/* LIST DATA SANTRI AS CARDS */}
       <div className="space-y-3">
         {filteredSantri.length === 0 ? (
-          <div className="bg-slate-50 border-2 border-dashed border-slate-200 rounded-3xl p-8 text-center text-slate-400">
-            <User className="w-8 h-8 mx-auto mb-2 opacity-40 text-slate-400" />
-            <p className="text-xs font-bold">Tidak ada data santri ditemukan.</p>
-            <p className="text-[10px] text-slate-400 mt-1">
+          <div className="bg-[#083834]/40 border-2 border-dashed border-teal-500/25 rounded-3xl p-8 text-center text-teal-200/50 backdrop-blur-xl">
+            <User className="w-8 h-8 mx-auto mb-2 opacity-40 text-teal-300" />
+            <p className="text-xs font-bold text-teal-100">Tidak ada data santri ditemukan.</p>
+            <p className="text-[10px] text-teal-200/50 mt-1">
               Coba ganti kata kunci pencarian atau ubah filter program.
             </p>
           </div>
@@ -402,28 +403,30 @@ export const DataMenuView: React.FC<DataMenuViewProps> = ({
               return (
                 <div
                   key={santri.row_index}
-                  className={`bg-white border rounded-2xl shadow-xs overflow-hidden transition-all duration-200 ${
-                    isExpanded ? 'border-emerald-500/80 ring-2 ring-emerald-500/10 shadow-md' : 'border-slate-100 hover:border-slate-200'
+                  className={`bg-[#083834]/65 backdrop-blur-xl border rounded-2xl shadow-md overflow-hidden transition-all duration-200 ${
+                    isExpanded
+                      ? 'border-emerald-400/80 ring-2 ring-emerald-400/20 shadow-emerald-950/40'
+                      : 'border-teal-500/25 hover:border-teal-400/50'
                   }`}
                 >
                   {/* CARD HEADER */}
                   <div
                     onClick={() => toggleExpand(santri.row_index)}
-                    className="p-3.5 flex items-center justify-between cursor-pointer hover:bg-slate-50/80 transition-colors"
+                    className="p-3.5 flex items-center justify-between cursor-pointer hover:bg-teal-500/10 transition-colors"
                   >
                     <div className="flex items-center space-x-3 min-w-0">
-                      <div className="w-10 h-10 rounded-2xl bg-emerald-100 text-emerald-800 font-black flex items-center justify-center shrink-0 shadow-xs">
+                      <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-emerald-400/30 to-teal-500/30 text-emerald-300 border border-emerald-400/40 font-black flex items-center justify-center shrink-0 shadow-xs font-['Outfit']">
                         {santri.nama ? santri.nama[0].toUpperCase() : 'S'}
                       </div>
                       <div className="min-w-0">
-                        <h4 className="font-extrabold text-xs text-slate-900 truncate">
+                        <h4 className="font-extrabold text-xs text-white truncate font-['Outfit']">
                           {santri.nama}
                         </h4>
                         <div className="flex flex-wrap items-center gap-1.5 mt-1">
-                          <span className="text-[9px] font-bold bg-blue-50 text-blue-700 px-2 py-0.5 rounded-md border border-blue-100">
+                          <span className="text-[9px] font-bold bg-[#042422] text-teal-200 px-2 py-0.5 rounded-md border border-teal-500/30">
                             NIS: {santri.nis || '-'}
                           </span>
-                          <span className="text-[9px] font-bold bg-purple-50 text-purple-700 px-2 py-0.5 rounded-md border border-purple-100 truncate max-w-[130px]">
+                          <span className="text-[9px] font-bold bg-emerald-950/60 text-emerald-300 px-2 py-0.5 rounded-md border border-emerald-500/30 truncate max-w-[130px]">
                             {santri.program || 'Tanpa Program'}
                           </span>
                         </div>
@@ -434,8 +437,8 @@ export const DataMenuView: React.FC<DataMenuViewProps> = ({
                       <span
                         className={`text-[9px] font-black px-2 py-0.5 rounded-md uppercase tracking-tight ${
                           (santri.status || 'aktif').toLowerCase() === 'aktif'
-                            ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
-                            : 'bg-amber-100 text-amber-800 border border-amber-200'
+                            ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
+                            : 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
                         }`}
                       >
                         {santri.status || 'Aktif'}
@@ -448,10 +451,10 @@ export const DataMenuView: React.FC<DataMenuViewProps> = ({
                           e.stopPropagation();
                           setSelectedQrSantri(santri);
                         }}
-                        className="w-7 h-7 rounded-xl bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 flex items-center justify-center transition-all shadow-xs active:scale-95"
+                        className="w-7 h-7 rounded-xl bg-teal-500/20 hover:bg-teal-500/30 text-teal-200 border border-teal-500/40 flex items-center justify-center transition-all shadow-xs active:scale-95"
                         title="Tampilkan & Cetak Kartu QR Santri"
                       >
-                        <QrCode className="w-3.5 h-3.5 text-purple-600" />
+                        <QrCode className="w-3.5 h-3.5 text-emerald-300" />
                       </button>
 
                       {/* Tombol Bagikan Link Laporan */}
@@ -461,16 +464,16 @@ export const DataMenuView: React.FC<DataMenuViewProps> = ({
                           e.stopPropagation();
                           handleOpenShareModal(santri);
                         }}
-                        className="w-7 h-7 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 flex items-center justify-center transition-all shadow-xs active:scale-95"
+                        className="w-7 h-7 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 flex items-center justify-center transition-all shadow-xs active:scale-95"
                         title="Bagikan Tautan Laporan Santri"
                       >
-                        <Link2 className="w-3.5 h-3.5 text-emerald-600" />
+                        <Link2 className="w-3.5 h-3.5 text-emerald-300" />
                       </button>
 
-                      <div className="w-7 h-7 rounded-full bg-slate-100 flex items-center justify-center text-slate-500">
+                      <div className="w-7 h-7 rounded-full bg-teal-900/40 border border-teal-500/20 flex items-center justify-center text-teal-300">
                         <ChevronDown
                           className={`w-4 h-4 transition-transform duration-200 ${
-                            isExpanded ? 'rotate-180 text-emerald-600' : ''
+                            isExpanded ? 'rotate-180 text-emerald-400' : ''
                           }`}
                         />
                       </div>
@@ -479,38 +482,38 @@ export const DataMenuView: React.FC<DataMenuViewProps> = ({
 
                   {/* CARD BODY DETAILS */}
                   {isExpanded && (
-                    <div className="p-4 bg-slate-50/60 border-t border-slate-100 space-y-3">
-                      <div className="bg-white p-3 rounded-xl border border-slate-100 space-y-2 text-xs">
-                        <div className="grid grid-cols-2 gap-2 pb-2 border-b border-slate-100">
+                    <div className="p-4 bg-[#042422]/70 border-t border-teal-500/25 space-y-3">
+                      <div className="bg-[#083834]/80 p-3 rounded-xl border border-teal-500/25 space-y-2 text-xs">
+                        <div className="grid grid-cols-2 gap-2 pb-2 border-b border-teal-500/20">
                           <div>
-                            <p className="text-[9px] font-bold text-slate-400 uppercase">Nama Lengkap</p>
-                            <p className="font-extrabold text-slate-900">{santri.nama}</p>
+                            <p className="text-[9px] font-bold text-teal-300/70 uppercase">Nama Lengkap</p>
+                            <p className="font-extrabold text-white">{santri.nama}</p>
                           </div>
                           <div>
-                            <p className="text-[9px] font-bold text-slate-400 uppercase">NIS / Induk</p>
-                            <p className="font-extrabold text-emerald-600">{santri.nis || '-'}</p>
+                            <p className="text-[9px] font-bold text-teal-300/70 uppercase">NIS / Induk</p>
+                            <p className="font-extrabold text-emerald-300">{santri.nis || '-'}</p>
                           </div>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-2 pb-2 border-b border-slate-100">
+                        <div className="grid grid-cols-2 gap-2 pb-2 border-b border-teal-500/20">
                           <div>
-                            <p className="text-[9px] font-bold text-slate-400 uppercase">Program</p>
-                            <p className="font-semibold text-slate-800">{santri.program || '-'}</p>
+                            <p className="text-[9px] font-bold text-teal-300/70 uppercase">Program</p>
+                            <p className="font-semibold text-teal-100">{santri.program || '-'}</p>
                           </div>
                           <div>
-                            <p className="text-[9px] font-bold text-slate-400 uppercase">Tgl Masuk</p>
-                            <p className="font-semibold text-slate-800">{santri.tgl_masuk || '-'}</p>
+                            <p className="text-[9px] font-bold text-teal-300/70 uppercase">Tgl Masuk</p>
+                            <p className="font-semibold text-teal-100">{santri.tgl_masuk || '-'}</p>
                           </div>
                         </div>
 
                         <div className="grid grid-cols-2 gap-2">
                           <div>
-                            <p className="text-[9px] font-bold text-slate-400 uppercase">Orang Tua / Wali</p>
-                            <p className="font-semibold text-slate-800">{santri.orang_tua || santri.nama_wali || '-'}</p>
+                            <p className="text-[9px] font-bold text-teal-300/70 uppercase">Orang Tua / Wali</p>
+                            <p className="font-semibold text-teal-100">{santri.orang_tua || santri.nama_wali || '-'}</p>
                           </div>
                           <div>
-                            <p className="text-[9px] font-bold text-slate-400 uppercase">No HP / WA</p>
-                            <p className="font-semibold text-slate-800">{santri.no_hp || '-'}</p>
+                            <p className="text-[9px] font-bold text-teal-300/70 uppercase">No HP / WA</p>
+                            <p className="font-semibold text-teal-100">{santri.no_hp || '-'}</p>
                           </div>
                         </div>
                       </div>
@@ -520,9 +523,9 @@ export const DataMenuView: React.FC<DataMenuViewProps> = ({
                         <button
                           type="button"
                           onClick={() => onStartEdit('santri', santri.row_index)}
-                          className="flex-1 py-2.5 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200/80 font-bold rounded-xl text-xs transition-colors flex items-center justify-center space-x-1"
+                          className="flex-1 py-2.5 bg-teal-500/20 hover:bg-teal-500/30 text-teal-200 border border-teal-500/40 font-bold rounded-xl text-xs transition-colors flex items-center justify-center space-x-1"
                         >
-                          <Edit2 className="w-3.5 h-3.5" />
+                          <Edit2 className="w-3.5 h-3.5 text-teal-300" />
                           <span>Edit</span>
                         </button>
 
@@ -531,9 +534,9 @@ export const DataMenuView: React.FC<DataMenuViewProps> = ({
                             href={`https://wa.me/${santri.no_hp.replace(/[^0-9]/g, '')}`}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="flex-1 py-2.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200/80 font-bold rounded-xl text-xs transition-colors flex items-center justify-center space-x-1"
+                            className="flex-1 py-2.5 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 font-bold rounded-xl text-xs transition-colors flex items-center justify-center space-x-1"
                           >
-                            <Phone className="w-3.5 h-3.5" />
+                            <Phone className="w-3.5 h-3.5 text-emerald-300" />
                             <span>WA Wali</span>
                           </a>
                         )}
@@ -541,7 +544,7 @@ export const DataMenuView: React.FC<DataMenuViewProps> = ({
                         <button
                           type="button"
                           onClick={() => onDeleteRow('santri', santri.row_index)}
-                          className="py-2.5 px-3 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200/80 font-bold rounded-xl text-xs transition-colors flex items-center justify-center"
+                          className="py-2.5 px-3 bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/40 font-bold rounded-xl text-xs transition-colors flex items-center justify-center"
                           title="Hapus Santri"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
@@ -566,19 +569,19 @@ export const DataMenuView: React.FC<DataMenuViewProps> = ({
 
       {/* INPUT MANUAL SANTRI MODAL */}
       {isAddManualModalOpen && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-[9999] flex items-center justify-center p-4">
-          <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-2xl max-w-md w-full space-y-4 animate-in fade-in zoom-in-95 duration-200 font-['Plus_Jakarta_Sans',sans-serif]">
-            <div className="flex justify-between items-center pb-2 border-b border-slate-100">
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-[9999] flex items-center justify-center p-4">
+          <div className="bg-[#083834] border border-teal-500/30 rounded-3xl p-5 shadow-2xl max-w-md w-full space-y-4 animate-in fade-in zoom-in-95 duration-200 font-['Plus_Jakarta_Sans',sans-serif] text-slate-100">
+            <div className="flex justify-between items-center pb-2 border-b border-teal-500/25">
               <div className="flex items-center space-x-2">
-                <UserPlus className="w-5 h-5 text-emerald-600" />
-                <h3 className="text-base font-black text-slate-900 font-['Outfit']">
+                <UserPlus className="w-5 h-5 text-emerald-400" />
+                <h3 className="text-base font-black text-white font-['Outfit']">
                   Input Data Santri Baru
                 </h3>
               </div>
               <button
                 type="button"
                 onClick={() => setIsAddManualModalOpen(false)}
-                className="p-1.5 text-slate-400 hover:text-slate-600 rounded-xl hover:bg-slate-100"
+                className="p-1.5 text-teal-300 hover:text-white rounded-xl hover:bg-teal-500/20"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -586,7 +589,7 @@ export const DataMenuView: React.FC<DataMenuViewProps> = ({
 
             <form onSubmit={handleSaveManualSantri} className="space-y-3">
               <div className="space-y-1">
-                <label className="text-[10px] font-black text-slate-500 uppercase ml-1">
+                <label className="text-[10px] font-black text-teal-300/80 uppercase ml-1">
                   Nama Santri *
                 </label>
                 <input
@@ -595,13 +598,13 @@ export const DataMenuView: React.FC<DataMenuViewProps> = ({
                   value={manualSantriForm.Nama}
                   onChange={(e) => setManualSantriForm((prev) => ({ ...prev, Nama: e.target.value }))}
                   placeholder="Nama lengkap santri..."
-                  className="w-full p-3 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:border-emerald-500 font-bold text-xs text-slate-900"
+                  className="w-full p-3 bg-[#042422] border border-teal-500/30 rounded-2xl outline-none focus:border-emerald-400 font-bold text-xs text-white placeholder-teal-200/40"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-2">
                 <div className="space-y-1">
-                  <label className="text-[10px] font-black text-slate-500 uppercase ml-1">
+                  <label className="text-[10px] font-black text-teal-300/80 uppercase ml-1">
                     NIS / ID
                   </label>
                   <input
@@ -609,22 +612,22 @@ export const DataMenuView: React.FC<DataMenuViewProps> = ({
                     value={manualSantriForm.NIS}
                     onChange={(e) => setManualSantriForm((prev) => ({ ...prev, NIS: e.target.value }))}
                     placeholder="Contoh: 1001"
-                    className="w-full p-3 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:border-emerald-500 font-semibold text-xs text-slate-900"
+                    className="w-full p-3 bg-[#042422] border border-teal-500/30 rounded-2xl outline-none focus:border-emerald-400 font-semibold text-xs text-white placeholder-teal-200/40"
                   />
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-[10px] font-black text-slate-500 uppercase ml-1">
+                  <label className="text-[10px] font-black text-teal-300/80 uppercase ml-1">
                     Program / Kelas
                   </label>
                   <select
                     value={manualSantriForm.Program}
                     onChange={(e) => setManualSantriForm((prev) => ({ ...prev, Program: e.target.value }))}
-                    className="w-full p-3 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:border-emerald-500 font-semibold text-xs text-slate-900"
+                    className="w-full p-3 bg-[#042422] border border-teal-500/30 rounded-2xl outline-none focus:border-emerald-400 font-semibold text-xs text-white"
                   >
-                    <option value="">-- Pilih Program --</option>
+                    <option value="" className="bg-[#042422] text-white">-- Pilih Program --</option>
                     {(data.program || []).map((p, idx) => (
-                      <option key={idx} value={p.nama_program}>
+                      <option key={idx} value={p.nama_program} className="bg-[#042422] text-white">
                         {p.nama_program.toUpperCase()}
                       </option>
                     ))}
@@ -633,20 +636,20 @@ export const DataMenuView: React.FC<DataMenuViewProps> = ({
               </div>
 
               <div className="space-y-1">
-                <label className="text-[10px] font-black text-slate-500 uppercase ml-1">
+                <label className="text-[10px] font-black text-teal-300/80 uppercase ml-1">
                   Tanggal Masuk
                 </label>
                 <input
                   type="date"
                   value={manualSantriForm['Tgl Masuk']}
                   onChange={(e) => setManualSantriForm((prev) => ({ ...prev, 'Tgl Masuk': e.target.value }))}
-                  className="w-full p-3 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:border-emerald-500 font-semibold text-xs text-slate-900"
+                  className="w-full p-3 bg-[#042422] border border-teal-500/30 rounded-2xl outline-none focus:border-emerald-400 font-semibold text-xs text-white"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-2">
                 <div className="space-y-1">
-                  <label className="text-[10px] font-black text-slate-500 uppercase ml-1">
+                  <label className="text-[10px] font-black text-teal-300/80 uppercase ml-1">
                     Orang Tua / Wali
                   </label>
                   <input
@@ -654,12 +657,12 @@ export const DataMenuView: React.FC<DataMenuViewProps> = ({
                     value={manualSantriForm['Orang Tua']}
                     onChange={(e) => setManualSantriForm((prev) => ({ ...prev, 'Orang Tua': e.target.value }))}
                     placeholder="Nama wali..."
-                    className="w-full p-3 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:border-emerald-500 font-semibold text-xs text-slate-900"
+                    className="w-full p-3 bg-[#042422] border border-teal-500/30 rounded-2xl outline-none focus:border-emerald-400 font-semibold text-xs text-white placeholder-teal-200/40"
                   />
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-[10px] font-black text-slate-500 uppercase ml-1">
+                  <label className="text-[10px] font-black text-teal-300/80 uppercase ml-1">
                     No HP / WA
                   </label>
                   <input
@@ -667,7 +670,7 @@ export const DataMenuView: React.FC<DataMenuViewProps> = ({
                     value={manualSantriForm['No HP']}
                     onChange={(e) => setManualSantriForm((prev) => ({ ...prev, 'No HP': e.target.value }))}
                     placeholder="081234567..."
-                    className="w-full p-3 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:border-emerald-500 font-semibold text-xs text-slate-900"
+                    className="w-full p-3 bg-[#042422] border border-teal-500/30 rounded-2xl outline-none focus:border-emerald-400 font-semibold text-xs text-white placeholder-teal-200/40"
                   />
                 </div>
               </div>
@@ -676,18 +679,18 @@ export const DataMenuView: React.FC<DataMenuViewProps> = ({
                 <button
                   type="button"
                   onClick={() => setIsAddManualModalOpen(false)}
-                  className="w-1/3 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-2xl text-xs"
+                  className="w-1/3 py-3 bg-[#042422] hover:bg-teal-900/50 text-teal-200 border border-teal-500/30 font-bold rounded-2xl text-xs"
                 >
                   Batal
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmittingManualSantri}
-                  className="flex-1 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-2xl text-xs shadow-md shadow-emerald-200 flex items-center justify-center space-x-2"
+                  className="flex-1 py-3 bg-gradient-to-r from-emerald-400 to-teal-300 hover:from-emerald-300 hover:to-teal-200 text-slate-950 font-bold rounded-2xl text-xs shadow-md shadow-emerald-500/20 flex items-center justify-center space-x-2 border border-emerald-300/30"
                 >
                   {isSubmittingManualSantri ? (
                     <>
-                      <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      <div className="w-3.5 h-3.5 border-2 border-slate-950 border-t-transparent rounded-full animate-spin" />
                       <span>Menyimpan...</span>
                     </>
                   ) : (
@@ -709,27 +712,27 @@ export const DataMenuView: React.FC<DataMenuViewProps> = ({
         )}&nama=${encodeURIComponent(namaVal)}#laporan`;
 
         return (
-          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-[9999] flex items-center justify-center p-4">
-            <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-2xl max-w-sm w-full space-y-4 animate-in fade-in zoom-in-95 duration-200">
+          <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-[9999] flex items-center justify-center p-4">
+            <div className="bg-[#083834] border border-teal-500/30 rounded-3xl p-5 shadow-2xl max-w-sm w-full space-y-4 animate-in fade-in zoom-in-95 duration-200 text-slate-100">
               {/* Header */}
-              <div className="flex justify-between items-start">
+              <div className="flex justify-between items-start pb-2 border-b border-teal-500/25">
                 <div className="flex items-center space-x-2.5">
-                  <div className="w-10 h-10 rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
+                  <div className="w-10 h-10 rounded-2xl bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 flex items-center justify-center shrink-0">
                     <Link2 className="w-5 h-5" />
                   </div>
                   <div>
-                    <h3 className="text-sm font-black text-slate-900 font-['Outfit']">
+                    <h3 className="text-sm font-black text-white font-['Outfit']">
                       Bagikan Tautan Laporan
                     </h3>
-                    <p className="text-[10px] text-slate-500 font-semibold">
-                      Ananda: <strong className="text-emerald-700">{activeShareSantri.nama}</strong>
+                    <p className="text-[10px] text-teal-200/70 font-semibold">
+                      Ananda: <strong className="text-emerald-300">{activeShareSantri.nama}</strong>
                     </p>
                   </div>
                 </div>
                 <button
                   type="button"
                   onClick={() => setActiveShareSantri(null)}
-                  className="p-1.5 text-slate-400 hover:text-slate-600 rounded-xl hover:bg-slate-100 transition-colors"
+                  className="p-1.5 text-teal-300 hover:text-white rounded-xl hover:bg-teal-500/20 transition-colors"
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -737,23 +740,23 @@ export const DataMenuView: React.FC<DataMenuViewProps> = ({
 
               {/* Link Box */}
               <div className="space-y-1">
-                <label className="text-[9.5px] font-extrabold text-slate-400 uppercase tracking-widest font-['Outfit']">
+                <label className="text-[9.5px] font-extrabold text-teal-300/80 uppercase tracking-widest font-['Outfit']">
                   Tautan Landing Page Santri
                 </label>
-                <div className="flex items-center space-x-1.5 bg-white border-2 border-emerald-500/30 p-1.5 rounded-2xl shadow-xs">
+                <div className="flex items-center space-x-1.5 bg-[#042422] border-2 border-teal-500/40 p-1.5 rounded-2xl shadow-xs">
                   <input
                     type="text"
                     readOnly
                     value={shareUrl}
-                    className="w-full bg-transparent px-2 py-1 text-xs font-bold text-slate-900 outline-none truncate"
+                    className="w-full bg-transparent px-2 py-1 text-xs font-bold text-white outline-none truncate"
                   />
                   <button
                     type="button"
                     onClick={() => handleCopyLink(shareUrl)}
                     className={`px-3 py-2 rounded-xl text-[11px] font-bold transition-all flex items-center space-x-1 shrink-0 ${
                       isCopied
-                        ? 'bg-emerald-600 text-white shadow-xs'
-                        : 'bg-slate-800 hover:bg-slate-900 text-white active:scale-95'
+                        ? 'bg-emerald-400 text-slate-950 font-black shadow-xs'
+                        : 'bg-[#083834] hover:bg-[#0a423d] text-teal-100 border border-teal-500/30 active:scale-95'
                     }`}
                   >
                     {isCopied ? (
@@ -776,7 +779,7 @@ export const DataMenuView: React.FC<DataMenuViewProps> = ({
                 <button
                   type="button"
                   onClick={() => handleSendWhatsAppShare(activeShareSantri, shareUrl)}
-                  className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 active:scale-98 text-white font-extrabold rounded-2xl shadow-md transition-all flex items-center justify-center space-x-2 text-xs"
+                  className="w-full py-3 bg-gradient-to-r from-emerald-400 to-teal-300 hover:from-emerald-300 hover:to-teal-200 active:scale-98 text-slate-950 font-extrabold rounded-2xl shadow-md transition-all flex items-center justify-center space-x-2 text-xs border border-emerald-300/30"
                 >
                   <MessageCircle className="w-4 h-4" />
                   <span>Kirim WhatsApp</span>
@@ -786,9 +789,9 @@ export const DataMenuView: React.FC<DataMenuViewProps> = ({
                   href={shareUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold rounded-2xl transition-all flex items-center justify-center space-x-1.5 text-[11px]"
+                  className="w-full py-2.5 bg-[#042422] hover:bg-teal-900/40 text-teal-200 border border-teal-500/30 font-bold rounded-2xl transition-all flex items-center justify-center space-x-1.5 text-[11px]"
                 >
-                  <ExternalLink className="w-3.5 h-3.5 text-slate-500" />
+                  <ExternalLink className="w-3.5 h-3.5 text-teal-300" />
                   <span>Pratinjau Landing Page Laporan</span>
                 </a>
               </div>

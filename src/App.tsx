@@ -15,10 +15,9 @@ import { DataMenuView } from './components/DataMenuView';
 import { RekapDataView } from './components/RekapDataView';
 import { InputFormView } from './components/InputFormView';
 import { RaportView } from './components/RaportView';
-import { RobotaChatView } from './components/RobotaChatView';
+import { ScanPageView } from './components/ScanPageView';
 import { BottomNav } from './components/BottomNav';
 import { CustomModal } from './components/CustomModal';
-import { QrScannerModal } from './components/QrScannerModal';
 
 import { PublicSantriLandingView } from './components/PublicSantriLandingView';
 
@@ -71,8 +70,7 @@ export default function App() {
 
   // Navigation & View States
   const [currentPage, setCurrentPage] = useState<PageView>('dashboard');
-  const [isScannerOpen, setIsScannerOpen] = useState(false);
-  const [activeTabSource, setActiveTabSource] = useState<'dashboard' | 'data-menu' | 'input' | 'raport' | 'robota'>('dashboard');
+  const [activeTabSource, setActiveTabSource] = useState<'dashboard' | 'data-menu' | 'input' | 'raport' | 'scan'>('dashboard');
   const [activeCategory, setActiveCategory] = useState<CategoryKey>('santri');
   const [editMode, setEditMode] = useState<{
     active: boolean;
@@ -468,6 +466,56 @@ export default function App() {
     });
   };
 
+  // QR Scanner Mutabaah Handler
+  const handleScannerMutabaah = async (payload: {
+    nama: string;
+    nis: string;
+    tanggal: string;
+    subuh: string;
+    dzuhur: string;
+    ashar: string;
+    maghrib: string;
+    isya: string;
+    tadarusan: string;
+    catatan: string;
+  }) => {
+    // 1. Submit to single AppScript backend
+    await runServer('submitEntry', [
+      'mutabaah',
+      {
+        Nama: payload.nama,
+        NIS: payload.nis,
+        Tanggal: payload.tanggal,
+        Subuh: payload.subuh,
+        Dzuhur: payload.dzuhur,
+        Ashar: payload.ashar,
+        Maghrib: payload.maghrib,
+        Isya: payload.isya,
+        Tadarusan: payload.tadarusan,
+        Catatan: payload.catatan,
+      },
+    ]);
+
+    // 2. Update local state immediately
+    setAppData((prev) => {
+      const list = [...(prev.mutabaah || [])];
+      list.push({
+        row_index: list.length + 2,
+        nama: payload.nama,
+        nis: payload.nis,
+        tanggal: payload.tanggal,
+        subuh: payload.subuh,
+        dzuhur: payload.dzuhur,
+        ashar: payload.ashar,
+        maghrib: payload.maghrib,
+        isya: payload.isya,
+        tadarusan: payload.tadarusan,
+        catatan: payload.catatan,
+      });
+      return { ...prev, mutabaah: list };
+    });
+  };
+
   // Open Category Data List in Rekap View from Home
   const handleOpenDataListFromHome = (cat: CategoryKey) => {
     if (currentUser?.role !== 'admin' && (cat === 'keuangan' || cat === 'users')) {
@@ -781,13 +829,13 @@ export default function App() {
   }
 
   return (
-    <div className="bg-white min-h-[100dvh] w-full text-slate-800 antialiased font-sans flex justify-center selection:bg-emerald-500 selection:text-white overflow-x-hidden">
+    <div className="bg-[#031e1c] min-h-[100dvh] w-full text-slate-100 antialiased font-sans flex justify-center selection:bg-emerald-400 selection:text-slate-950 overflow-x-hidden bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-[#073632] via-[#041f1e] to-[#021615]">
       {/* Loading Overlay */}
       {isLoading && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-[9999] flex flex-col items-center justify-center p-4 transition-opacity animate-in fade-in">
-          <div className="bg-white px-8 py-7 rounded-[2rem] flex flex-col items-center shadow-2xl border border-slate-100 max-w-xs w-full text-center">
+        <div className="fixed inset-0 bg-slate-950/70 backdrop-blur-md z-[9999] flex flex-col items-center justify-center p-4 transition-opacity animate-in fade-in">
+          <div className="bg-[#083834] px-8 py-7 rounded-[2rem] flex flex-col items-center shadow-2xl border border-teal-500/30 max-w-xs w-full text-center">
             <div className="relative mb-3 flex items-center justify-center">
-              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-700 p-1 shadow-lg shadow-emerald-500/30 flex items-center justify-center animate-bounce overflow-hidden">
+              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-600 p-1 shadow-lg shadow-emerald-500/30 flex items-center justify-center animate-bounce overflow-hidden border border-emerald-300/30">
                 <img
                   src="/maktablink-icon.svg"
                   alt="MaktabLink Logo"
@@ -795,7 +843,7 @@ export default function App() {
                 />
               </div>
             </div>
-            <p className="text-sm font-black text-slate-800 tracking-tight font-['Outfit']">{loadingText}</p>
+            <p className="text-sm font-black text-white tracking-tight font-['Outfit']">{loadingText}</p>
           </div>
         </div>
       )}
@@ -810,22 +858,19 @@ export default function App() {
       />
 
       {/* Main App Container */}
-      <div className="w-full max-w-md mx-auto h-[100dvh] max-h-[100dvh] relative bg-white overflow-hidden flex flex-col">
+      <div className="w-full max-w-md mx-auto h-[100dvh] max-h-[100dvh] relative bg-[#042422]/95 text-slate-100 overflow-hidden flex flex-col shadow-2xl border-x border-teal-900/40">
         {!currentUser ? (
           <LoginSection onLogin={handleLogin} />
         ) : (
           <div className="flex-1 flex flex-col h-full max-h-[100dvh] overflow-hidden min-h-0">
-            {currentPage !== 'robota' && (
-              <Header
-                user={currentUser}
-                onLogout={handleLogout}
-                onRefresh={() => refreshData()}
-                isSyncing={isSyncing}
-                onOpenScanner={() => setIsScannerOpen(true)}
-              />
-            )}
+            <Header
+              user={currentUser}
+              onLogout={handleLogout}
+              onRefresh={() => refreshData()}
+              isSyncing={isSyncing}
+            />
 
-            <main className={`flex-1 overflow-y-auto min-h-0 relative ${currentPage === 'robota' ? 'pb-0 h-full' : 'pb-28'}`}>
+            <main className="flex-1 overflow-y-auto min-h-0 relative pb-28">
               {currentPage === 'dashboard' && (
                 <AdminDashboardView
                   data={appData}
@@ -847,6 +892,16 @@ export default function App() {
                   onSubmitSantri={async (payload) => {
                     await handleSubmitForm('santri', payload, false);
                   }}
+                />
+              )}
+
+              {currentPage === 'scan' && (
+                <ScanPageView
+                  data={appData}
+                  currentUser={currentUser}
+                  onSubmitAttendance={handleScannerAttendance}
+                  onSubmitProgress={handleScannerProgress}
+                  onSubmitMutabaah={handleScannerMutabaah}
                 />
               )}
 
@@ -893,43 +948,21 @@ export default function App() {
                   onShowModal={showModal}
                 />
               )}
-
-              {currentPage === 'robota' && (
-                <RobotaChatView
-                  data={appData}
-                  onExit={() => {
-                    setActiveTabSource('dashboard');
-                    setCurrentPage('dashboard');
-                  }}
-                />
-              )}
             </main>
 
             {/* Floating Navigation */}
-            {currentPage !== 'robota' && (
-              <BottomNav
-                currentPage={currentPage}
-                activeTabSource={activeTabSource}
-                onNavigate={(page) => {
-                  setActiveTabSource(page);
-                  setCurrentPage(page);
-                }}
-                onResetInputForm={handleResetInputForm}
-              />
-            )}
+            <BottomNav
+              currentPage={currentPage}
+              activeTabSource={activeTabSource}
+              onNavigate={(page) => {
+                setActiveTabSource(page);
+                setCurrentPage(page);
+              }}
+              onResetInputForm={handleResetInputForm}
+            />
           </div>
         )}
       </div>
-
-      {/* QR SCANNER MODAL (ABSENSI & PROGRESS) */}
-      <QrScannerModal
-        isOpen={isScannerOpen}
-        onClose={() => setIsScannerOpen(false)}
-        data={appData}
-        currentUser={currentUser}
-        onSubmitAttendance={handleScannerAttendance}
-        onSubmitProgress={handleScannerProgress}
-      />
     </div>
   );
 }

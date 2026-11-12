@@ -386,6 +386,8 @@ function doGet(e) {
     return respondJSON(getFormFields(e.parameter.category));
   } else if (method === 'setupData') {
     return respondJSON({ message: setupData() });
+  } else if (method === 'clearCategoryData') {
+    return respondJSON(clearCategoryData(e.parameter.category));
   }
   return respondJSON({
     status: 'online',
@@ -571,16 +573,16 @@ function findTargetSheet(ss, category) {
   for (var i = 0; i < sheets.length; i++) {
     var sNameClean = sheets[i].getName().toLowerCase().trim().replace(/[^a-z0-9]/g, '');
     if (sNameClean === catClean) return sheets[i];
-    if (catClean === 'progress' && (sNameClean.includes('progress') || sNameClean.includes('hafalan') || sNameClean.includes('capaian'))) {
+    if (catClean === 'progress' && (sNameClean.includes('progress') || sNameClean.includes('progres') || sNameClean.includes('hafalan') || sNameClean.includes('capaian'))) {
       return sheets[i];
     }
-    if (catClean === 'santri' && sNameClean.includes('santri')) return sheets[i];
-    if (catClean === 'absensi' && (sNameClean.includes('absen') || sNameClean.includes('kehadiran'))) return sheets[i];
-    if (catClean === 'keuangan' && (sNameClean.includes('keuangan') || sNameClean.includes('iuran') || sNameClean.includes('spp'))) return sheets[i];
-    if (catClean === 'informasi' && sNameClean.includes('info')) return sheets[i];
-    if (catClean === 'program' && sNameClean.includes('program')) return sheets[i];
-    if (catClean === 'mutabaah' && (sNameClean.includes('mutaba') || sNameClean.includes('ibadah'))) return sheets[i];
-    if (catClean === 'users' && (sNameClean.includes('user') || sNameClean.includes('ustaz') || sNameClean.includes('ustadz') || sNameClean.includes('pengajar'))) return sheets[i];
+    if (catClean === 'santri' && (sNameClean.includes('santri') || sNameClean.includes('siswa'))) return sheets[i];
+    if (catClean === 'absensi' && (sNameClean.includes('absen') || sNameClean.includes('presensi') || sNameClean.includes('kehadiran'))) return sheets[i];
+    if (catClean === 'keuangan' && (sNameClean.includes('keuangan') || sNameClean.includes('iuran') || sNameClean.includes('spp') || sNameClean.includes('syahriah') || sNameClean.includes('kas'))) return sheets[i];
+    if (catClean === 'informasi' && (sNameClean.includes('informasi') || sNameClean.includes('pengumuman') || sNameClean.includes('info') || sNameClean.includes('berita'))) return sheets[i];
+    if (catClean === 'program' && (sNameClean.includes('program') || sNameClean.includes('kelas'))) return sheets[i];
+    if (catClean === 'mutabaah' && (sNameClean.includes('mutaba') || sNameClean.includes('ibadah') || sNameClean.includes('yaumiyah'))) return sheets[i];
+    if (catClean === 'users' && (sNameClean.includes('user') || sNameClean.includes('ustaz') || sNameClean.includes('ustadz') || sNameClean.includes('pengajar') || sNameClean.includes('guru') || sNameClean.includes('akun'))) return sheets[i];
   }
 
   var newSheet = ss.insertSheet(category);

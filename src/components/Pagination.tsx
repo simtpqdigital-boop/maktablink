@@ -56,10 +56,10 @@ export const Pagination: React.FC<PaginationProps> = ({
   const pages = getPageNumbers();
 
   return (
-    <div className={`flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 pb-2 border-t border-slate-100 ${className}`}>
+    <div className={`flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 pb-2 border-t border-teal-500/25 ${className}`}>
       {/* Information text */}
-      <div className="text-[11px] font-bold text-slate-500">
-        Menampilkan <span className="font-black text-slate-800">{startItem}</span> - <span className="font-black text-slate-800">{endItem}</span> dari <span className="font-black text-slate-800">{totalItems}</span> data
+      <div className="text-[11px] font-bold text-teal-200/70">
+        Menampilkan <span className="font-black text-emerald-300">{startItem}</span> - <span className="font-black text-emerald-300">{endItem}</span> dari <span className="font-black text-white">{totalItems}</span> data
       </div>
 
       {/* Pagination controls */}
@@ -69,7 +69,7 @@ export const Pagination: React.FC<PaginationProps> = ({
           type="button"
           disabled={currentPage === 1}
           onClick={() => onPageChange(currentPage - 1)}
-          className="w-8 h-8 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center transition-all shadow-2xs active:scale-95"
+          className="w-8 h-8 rounded-xl border border-teal-500/30 bg-[#042422] hover:bg-[#083834] text-teal-200 disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center transition-all shadow-xs active:scale-95"
           title="Halaman Sebelumnya"
         >
           <ChevronLeft className="w-4 h-4" />
@@ -79,7 +79,7 @@ export const Pagination: React.FC<PaginationProps> = ({
         {pages.map((p, idx) => {
           if (typeof p === 'string') {
             return (
-              <span key={`ellipse-${idx}`} className="w-8 h-8 flex items-center justify-center text-xs font-bold text-slate-400">
+              <span key={`ellipse-${idx}`} className="w-8 h-8 flex items-center justify-center text-xs font-bold text-teal-300/50">
                 ...
               </span>
             );
@@ -92,10 +92,10 @@ export const Pagination: React.FC<PaginationProps> = ({
               key={p}
               type="button"
               onClick={() => onPageChange(p)}
-              className={`w-8 h-8 rounded-xl font-black text-xs flex items-center justify-center transition-all shadow-2xs active:scale-95 ${
+              className={`w-8 h-8 rounded-xl font-black text-xs flex items-center justify-center transition-all shadow-xs active:scale-95 ${
                 isActive
-                  ? 'bg-emerald-600 text-white border border-emerald-600 shadow-emerald-200 ring-2 ring-emerald-500/20'
-                  : 'bg-white hover:bg-emerald-50 hover:text-emerald-700 text-slate-700 border border-slate-200'
+                  ? 'bg-gradient-to-r from-emerald-400 to-teal-300 text-slate-950 border border-emerald-300/40 shadow-emerald-500/20'
+                  : 'bg-[#042422] hover:bg-[#083834] text-teal-200 border border-teal-500/30'
               }`}
             >
               {p}
@@ -108,7 +108,7 @@ export const Pagination: React.FC<PaginationProps> = ({
           type="button"
           disabled={currentPage === totalPages}
           onClick={() => onPageChange(currentPage + 1)}
-          className="w-8 h-8 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center transition-all shadow-2xs active:scale-95"
+          className="w-8 h-8 rounded-xl border border-teal-500/30 bg-[#042422] hover:bg-[#083834] text-teal-200 disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center transition-all shadow-xs active:scale-95"
           title="Halaman Berikutnya"
         >
           <ChevronRight className="w-4 h-4" />

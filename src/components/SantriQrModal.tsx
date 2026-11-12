@@ -70,19 +70,19 @@ export const SantriQrModal: React.FC<SantriQrModalProps> = ({ santri, isOpen, on
   };
 
   return (
-    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-[9999] flex items-center justify-center p-4">
-      <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-2xl max-w-sm w-full space-y-4 animate-in fade-in zoom-in-95 duration-200 font-['Plus_Jakarta_Sans',sans-serif]">
+    <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-[9999] flex items-center justify-center p-4">
+      <div className="bg-[#083834] border border-teal-500/30 rounded-3xl p-5 shadow-2xl max-w-sm w-full space-y-4 animate-in fade-in zoom-in-95 duration-200 font-['Plus_Jakarta_Sans',sans-serif] text-slate-100">
         {/* Header */}
-        <div className="flex justify-between items-center pb-2 border-b border-slate-100">
+        <div className="flex justify-between items-center pb-2 border-b border-teal-500/25">
           <div className="flex items-center space-x-2">
-            <div className="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center">
+            <div className="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 flex items-center justify-center">
               <QrCode className="w-4 h-4" />
             </div>
             <div>
-              <h3 className="text-sm font-black text-slate-900 font-['Outfit']">
+              <h3 className="text-sm font-black text-white font-['Outfit']">
                 Kartu QR Code Santri
               </h3>
-              <p className="text-[10px] text-slate-500 font-semibold">
+              <p className="text-[10px] text-teal-200/70 font-semibold">
                 Dibuat otomatis dari NIS Santri
               </p>
             </div>
@@ -90,7 +90,7 @@ export const SantriQrModal: React.FC<SantriQrModalProps> = ({ santri, isOpen, on
           <button
             type="button"
             onClick={onClose}
-            className="p-1.5 text-slate-400 hover:text-slate-600 rounded-xl hover:bg-slate-100 transition-colors"
+            className="p-1.5 text-teal-300 hover:text-white rounded-xl hover:bg-teal-500/20 transition-colors"
           >
             <X className="w-4 h-4" />
           </button>
@@ -99,11 +99,11 @@ export const SantriQrModal: React.FC<SantriQrModalProps> = ({ santri, isOpen, on
         {/* Printable Card Preview */}
         <div
           ref={cardRef}
-          className="bg-gradient-to-b from-slate-900 via-slate-800 to-emerald-950 p-5 rounded-2xl text-white text-center shadow-md border border-slate-800 relative overflow-hidden"
+          className="bg-gradient-to-b from-[#031e1c] via-[#042422] to-[#083834] p-5 rounded-2xl text-white text-center shadow-lg border border-teal-500/30 relative overflow-hidden"
         >
           {/* Card Top Brand */}
           <div className="flex items-center justify-center space-x-1.5 mb-2">
-            <span className="text-[9px] font-black text-emerald-400 uppercase tracking-widest font-['Outfit']">
+            <span className="text-[9px] font-black text-emerald-300 uppercase tracking-widest font-['Outfit']">
               MaktabLink ID Card
             </span>
           </div>
@@ -113,10 +113,10 @@ export const SantriQrModal: React.FC<SantriQrModalProps> = ({ santri, isOpen, on
           </h4>
 
           <div className="flex items-center justify-center space-x-2 mt-1 mb-3">
-            <span className="text-[10px] font-black bg-emerald-500/30 text-emerald-300 border border-emerald-400/40 px-2 py-0.5 rounded-md">
+            <span className="text-[10px] font-black bg-emerald-500/20 text-emerald-300 border border-emerald-400/40 px-2 py-0.5 rounded-md">
               NIS: {nisValue}
             </span>
-            <span className="text-[10px] font-bold bg-white/10 text-slate-200 px-2 py-0.5 rounded-md truncate max-w-[130px]">
+            <span className="text-[10px] font-bold bg-[#083834] text-teal-200 border border-teal-500/30 px-2 py-0.5 rounded-md truncate max-w-[130px]">
               {santri.program || 'Santri'}
             </span>
           </div>
@@ -126,7 +126,7 @@ export const SantriQrModal: React.FC<SantriQrModalProps> = ({ santri, isOpen, on
             <canvas ref={canvasRef} className="w-40 h-40 mx-auto rounded-lg" />
           </div>
 
-          <p className="text-[9px] text-slate-300 font-medium mt-2">
+          <p className="text-[9px] text-teal-200/70 font-medium mt-2">
             Scan untuk mencatat Absensi &amp; Progress Santri secara instan
           </p>
         </div>
@@ -138,7 +138,7 @@ export const SantriQrModal: React.FC<SantriQrModalProps> = ({ santri, isOpen, on
               type="button"
               onClick={handleDownloadQr}
               disabled={isDownloading}
-              className="py-2.5 px-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs flex items-center justify-center space-x-1.5 shadow-xs transition-all active:scale-95"
+              className="py-2.5 px-3 bg-gradient-to-r from-emerald-400 to-teal-300 hover:from-emerald-300 hover:to-teal-200 text-slate-950 font-bold rounded-xl text-xs flex items-center justify-center space-x-1.5 shadow-md shadow-emerald-500/20 transition-all active:scale-95 border border-emerald-300/30"
             >
               <Download className="w-3.5 h-3.5" />
               <span>Unduh QR</span>
@@ -147,16 +147,16 @@ export const SantriQrModal: React.FC<SantriQrModalProps> = ({ santri, isOpen, on
             <button
               type="button"
               onClick={handleCopyNis}
-              className="py-2.5 px-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs flex items-center justify-center space-x-1.5 transition-all active:scale-95"
+              className="py-2.5 px-3 bg-[#042422] hover:bg-teal-900/50 text-teal-200 border border-teal-500/30 font-bold rounded-xl text-xs flex items-center justify-center space-x-1.5 transition-all active:scale-95"
             >
               {copied ? (
                 <>
-                  <Check className="w-3.5 h-3.5 text-emerald-600" />
-                  <span className="text-emerald-700">Tersalin!</span>
+                  <Check className="w-3.5 h-3.5 text-emerald-300" />
+                  <span className="text-emerald-300">Tersalin!</span>
                 </>
               ) : (
                 <>
-                  <Copy className="w-3.5 h-3.5 text-slate-500" />
+                  <Copy className="w-3.5 h-3.5 text-teal-400" />
                   <span>Salin NIS</span>
                 </>
               )}
@@ -166,7 +166,7 @@ export const SantriQrModal: React.FC<SantriQrModalProps> = ({ santri, isOpen, on
           <button
             type="button"
             onClick={handlePrint}
-            className="w-full py-2 bg-slate-50 hover:bg-slate-100 text-slate-600 hover:text-slate-900 border border-slate-200 rounded-xl text-[11px] font-semibold flex items-center justify-center space-x-1.5 transition-colors"
+            className="w-full py-2 bg-[#042422] hover:bg-teal-900/40 text-teal-200 hover:text-white border border-teal-500/30 rounded-xl text-[11px] font-semibold flex items-center justify-center space-x-1.5 transition-colors"
           >
             <Printer className="w-3.5 h-3.5" />
             <span>Cetak Kartu Santri</span>
