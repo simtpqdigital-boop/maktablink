@@ -110,7 +110,6 @@ export const ScanPageView: React.FC<ScanPageViewProps> = ({
 
   // Attendance Form State
   const todayStr = new Date().toISOString().split('T')[0];
-  const [attendanceStatus, setAttendanceStatus] = useState('Hadir');
 
   // Progress Form State
   const defaultUstaz = currentUser?.nama || currentUser?.username || 'Ustaz';
@@ -143,6 +142,28 @@ export const ScanPageView: React.FC<ScanPageViewProps> = ({
 
   const html5QrCodeRef = useRef<Html5Qrcode | null>(null);
   const scanLockRef = useRef(false);
+  // Ref to prevent SpeechSynthesisUtterance from being garbage-collected mid-speech in Chrome/Safari
+  const activeUtteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
+
+  // Pre-load and warm up browser speech synthesis voices on mount
+  useEffect(() => {
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+      try {
+        window.speechSynthesis.getVoices();
+        const handleVoices = () => {
+          try {
+            window.speechSynthesis.getVoices();
+          } catch (_) {}
+        };
+        window.speechSynthesis.onvoiceschanged = handleVoices;
+        return () => {
+          if ('speechSynthesis' in window) {
+            window.speechSynthesis.onvoiceschanged = null;
+          }
+        };
+      } catch (_) {}
+    }
+  }, []);
 
   // Toggle Category Selection
   const toggleCategory = (cat: string) => {
@@ -162,6 +183,9 @@ export const ScanPageView: React.FC<ScanPageViewProps> = ({
       const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
       if (!AudioCtx) return;
       const ctx = new AudioCtx();
+      if (ctx.state === 'suspended') {
+        ctx.resume().catch(() => {});
+      }
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
 
@@ -177,36 +201,63 @@ export const ScanPageView: React.FC<ScanPageViewProps> = ({
     } catch (e) {}
   };
 
-  // Speak attendance announcement using Web Speech API (khusus ketika absensi dipilih)
+  // Speak attendance announcement using Web Speech API: "[Nama Santri] sukses absensi"
   const speakAttendanceAnnouncement = (namaSantri: string) => {
     if (!soundEnabled) return;
     try {
-      if ('speechSynthesis' in window) {
-        window.speechSynthesis.cancel();
-
-        const cleanNama = (namaSantri || '').trim();
-        if (!cleanNama) return;
-
-        const textToSpeak = `${cleanNama} telah melakukan absen`;
-        const utterance = new SpeechSynthesisUtterance(textToSpeak);
-
-        utterance.lang = 'id-ID';
-        utterance.rate = 1.0;
-        utterance.pitch = 1.0;
-
-        const voices = window.speechSynthesis.getVoices();
-        const indonesianVoice = voices.find(
-          (v) =>
-            v.lang.toLowerCase().startsWith('id') ||
-            v.lang.toLowerCase().includes('id-id') ||
-            v.name.toLowerCase().includes('indonesia')
-        );
-        if (indonesianVoice) {
-          utterance.voice = indonesianVoice;
-        }
-
-        window.speechSynthesis.speak(utterance);
+      if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
+        console.warn('SpeechSynthesis not supported on this device/browser.');
+        return;
       }
+
+      const cleanNama = (namaSantri || '').trim();
+      if (!cleanNama) return;
+
+      const textToSpeak = `${cleanNama} sukses absensi`;
+      const utterance = new SpeechSynthesisUtterance(textToSpeak);
+
+      utterance.lang = 'id-ID';
+      utterance.rate = 1.0;
+      utterance.pitch = 1.0;
+      utterance.volume = 1.0;
+
+      // Select Indonesian voice if available
+      const voices = window.speechSynthesis.getVoices();
+      const indonesianVoice = voices.find(
+        (v) =>
+          v.lang.toLowerCase().startsWith('id') ||
+          v.lang.toLowerCase().includes('id-id') ||
+          v.name.toLowerCase().includes('indonesia')
+      );
+      if (indonesianVoice) {
+        utterance.voice = indonesianVoice;
+      }
+
+      utterance.onend = () => {
+        activeUtteranceRef.current = null;
+      };
+
+      utterance.onerror = (e) => {
+        console.warn('Speech synthesis event:', e);
+        activeUtteranceRef.current = null;
+      };
+
+      // Keep reference to prevent GC bug in Chromium/Safari
+      activeUtteranceRef.current = utterance;
+
+      // Unpause speech engine if paused by browser
+      try {
+        window.speechSynthesis.cancel();
+      } catch (_) {}
+
+      setTimeout(() => {
+        try {
+          window.speechSynthesis.resume();
+          window.speechSynthesis.speak(utterance);
+        } catch (err) {
+          console.warn('Error during speak execution:', err);
+        }
+      }, 60);
     } catch (e) {
       console.warn('Speech synthesis error:', e);
     }
@@ -276,8 +327,8 @@ export const ScanPageView: React.FC<ScanPageViewProps> = ({
               nama: santri.nama,
               nis: santri.nis || '-',
               tanggal: todayStr,
-              status: attendanceStatus,
-              keterangan: 'Presensi Scan Halaman',
+              status: 'Hadir',
+              keterangan: 'Presensi Scan QR',
             }
           : {
               nama: santri.nama,
@@ -301,7 +352,7 @@ export const ScanPageView: React.FC<ScanPageViewProps> = ({
         await onSubmitAttendance(absensiPayload, paymentPayload);
 
         const messages: string[] = [];
-        if (shouldDoAbsensi) messages.push(`Absensi: ${attendanceStatus}`);
+        if (shouldDoAbsensi) messages.push('Absensi: Hadir');
         if (shouldDoKeuangan) messages.push(`Keuangan: Rp ${keuanganPreset.nominal.toLocaleString('id-ID')}`);
 
         setSuccessBanner(`Berhasil dicatat! ${messages.join(' & ')}`);
@@ -723,9 +774,25 @@ export const ScanPageView: React.FC<ScanPageViewProps> = ({
           <div className="flex items-center space-x-1.5">
             <button
               type="button"
+              onClick={() => {
+                if (!soundEnabled) setSoundEnabled(true);
+                playBeepSound();
+                setTimeout(() => {
+                  speakAttendanceAnnouncement('Fatih');
+                }, 160);
+              }}
+              className="px-2.5 py-1 bg-[#042422] hover:bg-teal-900/50 text-teal-200 hover:text-emerald-300 rounded-xl border border-teal-500/30 text-[10px] font-black flex items-center space-x-1 transition-all active:scale-95 font-['Outfit']"
+              title="Uji coba suara absensi santri (Contoh: Fatih sukses absensi)"
+            >
+              <Volume2 className="w-3 h-3 text-emerald-400" />
+              <span>Tes Suara</span>
+            </button>
+
+            <button
+              type="button"
               onClick={() => setSoundEnabled((prev) => !prev)}
               className="p-1.5 bg-[#042422] hover:bg-teal-900/50 text-teal-200 rounded-xl border border-teal-500/30 transition-all active:scale-95"
-              title={soundEnabled ? 'Matikan Suara Beep' : 'Nyalakan Suara Beep'}
+              title={soundEnabled ? 'Matikan Suara' : 'Nyalakan Suara'}
             >
               {soundEnabled ? <Volume2 className="w-3.5 h-3.5 text-emerald-400" /> : <VolumeX className="w-3.5 h-3.5 text-teal-400/50" />}
             </button>
@@ -1134,41 +1201,18 @@ export const ScanPageView: React.FC<ScanPageViewProps> = ({
             </button>
           </div>
 
-          {/* Form Kehadiran Cepat jika kategori absensi aktif */}
+          {/* Konfirmasi Kehadiran Otomatis Hadir (Tanpa Pilihan Izin/Sakit/Alpa) */}
           {selectedCategories.includes('absensi') && (
-            <div className="bg-[#042422] p-2.5 rounded-2xl border border-teal-500/25 flex items-center justify-between">
-              <span className="text-[10px] font-black text-teal-300/80 uppercase font-['Outfit']">
-                Status Kehadiran:
-              </span>
-              <div className="flex space-x-1">
-                {['Hadir', 'Izin', 'Sakit', 'Alpa'].map((st) => (
-                  <button
-                    key={st}
-                    type="button"
-                    onClick={() => {
-                      setAttendanceStatus(st);
-                      if (scannedSantri) {
-                        onSubmitAttendance({
-                          nama: scannedSantri.nama,
-                          nis: scannedSantri.nis || '-',
-                          tanggal: todayStr,
-                          status: st,
-                          keterangan: 'Pembaruan Status Presensi',
-                        });
-                        setSuccessBanner(`Kehadiran ${scannedSantri.nama} diubah ke ${st}!`);
-                        setTimeout(() => setSuccessBanner(null), 2500);
-                      }
-                    }}
-                    className={`px-2.5 py-1 rounded-lg text-[9.5px] font-black uppercase transition-all ${
-                      attendanceStatus === st
-                        ? 'bg-emerald-400 text-slate-950 shadow-md font-black'
-                        : 'bg-[#031d1b] text-teal-200/70 hover:text-white border border-teal-500/20'
-                    }`}
-                  >
-                    {st}
-                  </button>
-                ))}
+            <div className="bg-[#042422] p-2.5 rounded-2xl border border-emerald-500/30 flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                <span className="text-xs font-black text-white font-['Outfit']">
+                  Presensi Santri: <span className="text-emerald-300 font-extrabold uppercase">Hadir Otomatis</span>
+                </span>
               </div>
+              <span className="text-[9.5px] font-black text-emerald-300 bg-emerald-500/20 px-2 py-0.5 rounded-md border border-emerald-500/40">
+                Tercatat
+              </span>
             </div>
           )}
         </div>
