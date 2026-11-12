@@ -1,6 +1,10 @@
 {
-  "name": "MaktabLink",
-  "description": "Aplikasi Frontend Platform Informasi Santri Berbasis Link (MaktabLink) yang terhubung langsung dengan Google Apps Script Web App.",
-  "requestFramePermissions": [],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+  "name": "Remix Remix maktablink",
+  "description": "Imported from GitHub",
+  "requestFramePermissions": [
+    "camera"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
 }

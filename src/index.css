@@ -28,3 +28,45 @@ body {
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(52, 211, 153, 0.6);
 }
+
+/* QR Scanner container styling */
+#fullpage-qr-reader {
+  width: 100% !important;
+  border: none !important;
+  background: transparent !important;
+}
+
+#fullpage-qr-reader video {
+  width: 100% !important;
+  height: 100% !important;
+  max-height: 380px !important;
+  object-fit: cover !important;
+  border-radius: 1rem !important;
+}
+
+#fullpage-qr-reader img {
+  display: none !important;
+}
+
+#fullpage-qr-reader__scan_region {
+  border-radius: 1rem !important;
+}
+
+@keyframes scanLineAnimation {
+  0% {
+    top: 8%;
+    opacity: 0.8;
+  }
+  50% {
+    top: 88%;
+    opacity: 1;
+  }
+  100% {
+    top: 8%;
+    opacity: 0.8;
+  }
+}
+
+.scanner-laser-line {
+  animation: scanLineAnimation 2.2s ease-in-out infinite;
+}

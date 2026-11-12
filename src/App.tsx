@@ -18,6 +18,7 @@ import { RaportView } from './components/RaportView';
 import { ScanPageView } from './components/ScanPageView';
 import { BottomNav } from './components/BottomNav';
 import { CustomModal } from './components/CustomModal';
+import { ErrorBoundary } from './components/ErrorBoundary';
 
 import { PublicSantriLandingView } from './components/PublicSantriLandingView';
 
@@ -407,8 +408,10 @@ export default function App() {
           nama: paymentPayload.nama,
           nis: paymentPayload.nis,
           tanggal: paymentPayload.tanggal,
+          kategori: paymentPayload.jenis,
           jenis: paymentPayload.jenis,
           nominal: String(paymentPayload.nominal),
+          bayar: String(paymentPayload.nominal),
           status: paymentPayload.status,
           keterangan: paymentPayload.keterangan || 'Pembayaran Presensi QR Code',
         });
@@ -835,11 +838,11 @@ export default function App() {
         <div className="fixed inset-0 bg-slate-950/70 backdrop-blur-md z-[9999] flex flex-col items-center justify-center p-4 transition-opacity animate-in fade-in">
           <div className="bg-[#083834] px-8 py-7 rounded-[2rem] flex flex-col items-center shadow-2xl border border-teal-500/30 max-w-xs w-full text-center">
             <div className="relative mb-3 flex items-center justify-center">
-              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-600 p-1 shadow-lg shadow-emerald-500/30 flex items-center justify-center animate-bounce overflow-hidden border border-emerald-300/30">
+              <div className="w-16 h-16 rounded-2xl shadow-lg shadow-emerald-500/30 flex items-center justify-center animate-bounce overflow-hidden border border-emerald-400/30">
                 <img
-                  src="/maktablink-icon.svg"
+                  src="/logo.png"
                   alt="MaktabLink Logo"
-                  className="w-full h-full object-contain filter drop-shadow"
+                  className="w-full h-full object-cover"
                 />
               </div>
             </div>
@@ -871,83 +874,85 @@ export default function App() {
             />
 
             <main className="flex-1 overflow-y-auto min-h-0 relative pb-28">
-              {currentPage === 'dashboard' && (
-                <AdminDashboardView
-                  data={appData}
-                  userRole={currentUser.role}
-                  onOpenDataList={handleOpenDataListFromHome}
-                  onSubmitQuickAttendance={handleSubmitQuickAttendance}
-                />
-              )}
+              <ErrorBoundary>
+                {currentPage === 'dashboard' && (
+                  <AdminDashboardView
+                    data={appData}
+                    userRole={currentUser.role}
+                    onOpenDataList={handleOpenDataListFromHome}
+                    onSubmitQuickAttendance={handleSubmitQuickAttendance}
+                  />
+                )}
 
-              {currentPage === 'data-menu' && (
-                <DataMenuView
-                  data={appData}
-                  userRole={currentUser.role}
-                  onStartAddManual={() => {}}
-                  onStartEdit={handleStartEdit}
-                  onDeleteRow={handleDeleteRow}
-                  onImportSantriBatch={handleImportSantriBatch}
-                  onOpenDataList={handleOpenDataListFromDataMenu}
-                  onSubmitSantri={async (payload) => {
-                    await handleSubmitForm('santri', payload, false);
-                  }}
-                />
-              )}
+                {currentPage === 'data-menu' && (
+                  <DataMenuView
+                    data={appData}
+                    userRole={currentUser.role}
+                    onStartAddManual={() => {}}
+                    onStartEdit={handleStartEdit}
+                    onDeleteRow={handleDeleteRow}
+                    onImportSantriBatch={handleImportSantriBatch}
+                    onOpenDataList={handleOpenDataListFromDataMenu}
+                    onSubmitSantri={async (payload) => {
+                      await handleSubmitForm('santri', payload, false);
+                    }}
+                  />
+                )}
 
-              {currentPage === 'scan' && (
-                <ScanPageView
-                  data={appData}
-                  currentUser={currentUser}
-                  onSubmitAttendance={handleScannerAttendance}
-                  onSubmitProgress={handleScannerProgress}
-                  onSubmitMutabaah={handleScannerMutabaah}
-                />
-              )}
+                {currentPage === 'scan' && (
+                  <ScanPageView
+                    data={appData}
+                    currentUser={currentUser}
+                    onSubmitAttendance={handleScannerAttendance}
+                    onSubmitProgress={handleScannerProgress}
+                    onSubmitMutabaah={handleScannerMutabaah}
+                  />
+                )}
 
-              {currentPage === 'rekap' && (
-                <RekapDataView
-                  category={activeCategory}
-                  data={appData}
-                  userRole={currentUser.role}
-                  onBackToDataMenu={() =>
-                    setCurrentPage(activeTabSource === 'data-menu' ? 'data-menu' : 'dashboard')
-                  }
-                  onStartEdit={handleStartEdit}
-                  onDeleteRow={handleDeleteRow}
-                  onDisenrollSantri={handleDisenrollSantri}
-                  onDeleteProgram={handleDeleteProgram}
-                  onClearCategoryData={handleClearCategoryData}
-                />
-              )}
+                {currentPage === 'rekap' && (
+                  <RekapDataView
+                    category={activeCategory}
+                    data={appData}
+                    userRole={currentUser.role}
+                    onBackToDataMenu={() =>
+                      setCurrentPage(activeTabSource === 'data-menu' ? 'data-menu' : 'dashboard')
+                    }
+                    onStartEdit={handleStartEdit}
+                    onDeleteRow={handleDeleteRow}
+                    onDisenrollSantri={handleDisenrollSantri}
+                    onDeleteProgram={handleDeleteProgram}
+                    onClearCategoryData={handleClearCategoryData}
+                  />
+                )}
 
-              {currentPage === 'input' && (
-                <InputFormView
-                  data={appData}
-                  userRole={currentUser.role}
-                  currentUser={currentUser}
-                  editMode={editMode}
-                  onCancelEdit={() => {
-                    handleResetInputForm();
-                    setCurrentPage('data-menu');
-                  }}
-                  onSubmitForm={handleSubmitForm}
-                  onSubmitQuickAttendance={handleSubmitQuickAttendance}
-                  fetchFields={fetchFormFields}
-                />
-              )}
+                {currentPage === 'input' && (
+                  <InputFormView
+                    data={appData}
+                    userRole={currentUser.role}
+                    currentUser={currentUser}
+                    editMode={editMode}
+                    onCancelEdit={() => {
+                      handleResetInputForm();
+                      setCurrentPage('data-menu');
+                    }}
+                    onSubmitForm={handleSubmitForm}
+                    onSubmitQuickAttendance={handleSubmitQuickAttendance}
+                    fetchFields={fetchFormFields}
+                  />
+                )}
 
-              {currentPage === 'raport' && (
-                <RaportView
-                  data={appData}
-                  user={currentUser}
-                  onNavigateToDashboard={() => {
-                    setActiveTabSource('dashboard');
-                    setCurrentPage('dashboard');
-                  }}
-                  onShowModal={showModal}
-                />
-              )}
+                {currentPage === 'raport' && (
+                  <RaportView
+                    data={appData}
+                    user={currentUser}
+                    onNavigateToDashboard={() => {
+                      setActiveTabSource('dashboard');
+                      setCurrentPage('dashboard');
+                    }}
+                    onShowModal={showModal}
+                  />
+                )}
+              </ErrorBoundary>
             </main>
 
             {/* Floating Navigation */}
@@ -955,7 +960,9 @@ export default function App() {
               currentPage={currentPage}
               activeTabSource={activeTabSource}
               onNavigate={(page) => {
-                setActiveTabSource(page);
+                if (page !== 'rekap') {
+                  setActiveTabSource(page);
+                }
                 setCurrentPage(page);
               }}
               onResetInputForm={handleResetInputForm}

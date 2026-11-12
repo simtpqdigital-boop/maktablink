@@ -102,8 +102,9 @@ export const SantriQrModal: React.FC<SantriQrModalProps> = ({ santri, isOpen, on
           className="bg-gradient-to-b from-[#031e1c] via-[#042422] to-[#083834] p-5 rounded-2xl text-white text-center shadow-lg border border-teal-500/30 relative overflow-hidden"
         >
           {/* Card Top Brand */}
-          <div className="flex items-center justify-center space-x-1.5 mb-2">
-            <span className="text-[9px] font-black text-emerald-300 uppercase tracking-widest font-['Outfit']">
+          <div className="flex items-center justify-center space-x-2 mb-2">
+            <img src="/logo.png" alt="Logo" className="w-5 h-5 rounded-md object-cover border border-emerald-400/40 shadow-xs" />
+            <span className="text-[9.5px] font-black text-emerald-300 uppercase tracking-widest font-['Outfit']">
               MaktabLink ID Card
             </span>
           </div>

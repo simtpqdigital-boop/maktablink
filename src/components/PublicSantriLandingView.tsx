@@ -49,11 +49,11 @@ export const PublicSantriLandingView: React.FC<PublicSantriLandingViewProps> = (
   if (isLoadingData) {
     return (
       <div className="min-h-screen bg-[#031e1c] text-white flex flex-col items-center justify-center p-6 text-center">
-        <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-600 p-1 shadow-xl shadow-emerald-500/30 flex items-center justify-center animate-bounce mb-4 overflow-hidden border border-emerald-300/30">
+        <div className="w-20 h-20 rounded-2xl shadow-xl shadow-emerald-500/30 flex items-center justify-center animate-bounce mb-4 overflow-hidden border border-emerald-300/30">
           <img
-            src="/maktablink-icon.svg"
+            src="/logo.png"
             alt="MaktabLink Logo"
-            className="w-full h-full object-contain filter drop-shadow"
+            className="w-full h-full object-cover"
           />
         </div>
         <h2 className="text-base font-black font-['Outfit'] text-white">Memuat Laporan Santri...</h2>
@@ -232,8 +232,8 @@ export const PublicSantriLandingView: React.FC<PublicSantriLandingViewProps> = (
         <header className="bg-[#083834]/80 backdrop-blur-xl border-b border-teal-500/25 p-4 pt-[max(1rem,env(safe-area-inset-top))] text-white relative overflow-hidden">
           <div className="flex items-center justify-between mb-3 relative z-10">
             <div className="flex items-center space-x-2.5">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-400 to-teal-600 p-0.5 shadow-md shadow-emerald-500/20 flex items-center justify-center shrink-0 overflow-hidden border border-emerald-300/30">
-                <img src="/maktablink-icon.svg" alt="MaktabLink Logo" className="w-full h-full object-contain filter drop-shadow" />
+              <div className="w-10 h-10 rounded-xl shadow-md shadow-emerald-500/20 flex items-center justify-center shrink-0 overflow-hidden border border-emerald-400/30">
+                <img src="/logo.png" alt="MaktabLink Logo" className="w-full h-full object-cover" />
               </div>
               <div>
                 <h1 className="text-base font-black text-white font-['Outfit'] tracking-tight">

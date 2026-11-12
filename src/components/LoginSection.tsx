@@ -61,11 +61,11 @@ export const LoginSection: React.FC<LoginSectionProps> = ({ onLogin }) => {
     <section className="p-5 md:p-8 pt-[max(1.5rem,env(safe-area-inset-top))] pb-[max(1.5rem,env(safe-area-inset-bottom))] flex-1 flex flex-col justify-center overflow-y-auto max-w-md mx-auto w-full">
       <div className="text-center mb-6">
         <div className="mb-3 flex justify-center">
-          <div className="relative p-1 bg-gradient-to-br from-emerald-400 to-teal-600 rounded-[2.2rem] shadow-xl shadow-emerald-500/20 border-2 border-emerald-300/40 flex items-center justify-center overflow-hidden">
+          <div className="relative w-20 h-20 rounded-[1.8rem] shadow-2xl shadow-emerald-500/25 border-2 border-emerald-300/40 flex items-center justify-center overflow-hidden transition-transform hover:scale-105">
             <img
-              src="/maktablink-icon.svg"
+              src="/logo.png"
               alt="MaktabLink Logo"
-              className="h-16 w-16 object-contain filter drop-shadow"
+              className="w-full h-full object-cover"
             />
           </div>
         </div>

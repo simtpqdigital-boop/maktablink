@@ -17,11 +17,11 @@ export const Header: React.FC<HeaderProps> = ({ user, onLogout, onRefresh, isSyn
       <div className="bg-[#083834]/55 backdrop-blur-xl border border-teal-500/25 rounded-2xl px-3.5 py-2.5 shadow-lg shadow-black/25 flex justify-between items-center transition-all">
         {/* Brand & User Profile */}
         <div className="flex items-center space-x-2.5">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-400 to-teal-600 p-0.5 shadow-md shadow-emerald-500/20 flex items-center justify-center shrink-0 overflow-hidden border border-emerald-300/30">
+          <div className="w-9 h-9 rounded-xl shadow-md shadow-emerald-500/20 flex items-center justify-center shrink-0 overflow-hidden border border-emerald-400/30">
             <img
-              src="/maktablink-icon.svg"
+              src="/logo.png"
               alt="MaktabLink Logo"
-              className="w-full h-full object-contain filter drop-shadow-xs"
+              className="w-full h-full object-cover"
             />
           </div>
           <div>
