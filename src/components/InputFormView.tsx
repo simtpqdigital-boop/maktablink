@@ -7,6 +7,7 @@ import {
   setKeuanganPreset,
   KeuanganPreset,
 } from '../services/keuanganPreset';
+import { normalizePhoneForStorage } from '../utils/phone';
 
 interface InputFormViewProps {
   data: AppData;
@@ -274,7 +275,15 @@ export const InputFormView: React.FC<InputFormViewProps> = ({
     if (isSubmitting) return;
 
     const activeCat = editMode.active ? editMode.category : category;
-    const finalPayload = { ...formData };
+    const finalPayload: Record<string, any> = { ...formData };
+    if (activeCat === 'santri') {
+      Object.keys(finalPayload).forEach((k) => {
+        const normKey = k.toLowerCase().trim();
+        if (/(^|[_\s./-])(hp|wa|whatsapp|telp|telepon|phone)($|[_\s./-])/i.test(normKey)) {
+          finalPayload[k] = normalizePhoneForStorage(finalPayload[k]);
+        }
+      });
+    }
 
     setIsSubmitting(true);
     try {

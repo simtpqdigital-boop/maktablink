@@ -18,6 +18,7 @@ import {
   X,
 } from 'lucide-react';
 import { Absensi, AppData, Keuangan, Mutabaah, Progress, Santri, User as AuthUser } from '../types';
+import { extractSantriPhone, formatWhatsAppPhone } from '../utils/phone';
 
 interface RaportViewProps {
   data: AppData;
@@ -116,23 +117,12 @@ export const RaportView: React.FC<RaportViewProps> = ({ data, onShowModal }) => 
   const handleSendWA = (santri: Santri) => {
     const { absensiList, keuanganList, mutabaahList, progressList } = getSantriReportData(santri);
 
-    const rawPhone =
-      santri.no_hp ||
-      santri.hp ||
-      santri.wa_wali ||
-      santri.nomor_wa ||
-      santri.whatsapp ||
-      santri.no_wa ||
-      santri.telp ||
-      santri.no_telp;
-
-    const cleanPhone = String(rawPhone || '').replace(/[^0-9]/g, '');
-    if (!cleanPhone) {
+    const rawPhone = extractSantriPhone(santri);
+    const formattedPhone = formatWhatsAppPhone(rawPhone);
+    if (!formattedPhone) {
       onShowModal('error', 'Nomor WhatsApp Wali tidak ditemukan atau belum diisi pada data santri ini.');
       return;
     }
-
-    const formattedPhone = cleanPhone.startsWith('0') ? '62' + cleanPhone.slice(1) : cleanPhone;
 
     const lines: string[] = [];
     lines.push('*LAPORAN PERKEMBANGAN SANTRI MAKTABLINK*');
@@ -380,13 +370,7 @@ export const RaportView: React.FC<RaportViewProps> = ({ data, onShowModal }) => 
                   <div className="bg-[#031d1b] p-2 rounded-xl border border-teal-500/15">
                     <p className="text-[9.5px] text-teal-300/60 font-bold uppercase">WhatsApp Wali</p>
                     <p className="font-extrabold text-emerald-300 truncate mt-0.5">
-                      {selectedSantri.no_hp ||
-                        selectedSantri.hp ||
-                        selectedSantri.wa_wali ||
-                        selectedSantri.nomor_wa ||
-                        selectedSantri.whatsapp ||
-                        selectedSantri.no_wa ||
-                        '-'}
+                      {extractSantriPhone(selectedSantri) || '-'}
                     </p>
                   </div>
                   {selectedSantri.alamat && (

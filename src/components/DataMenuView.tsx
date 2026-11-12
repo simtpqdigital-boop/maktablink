@@ -22,6 +22,7 @@ import {
 import { AppData, CategoryKey, Role, Santri } from '../types';
 import { Pagination } from './Pagination';
 import { SantriQrModal } from './SantriQrModal';
+import { extractSantriPhone, formatWhatsAppPhone, normalizePhoneForStorage } from '../utils/phone';
 
 interface DataMenuViewProps {
   data: AppData;
@@ -85,16 +86,8 @@ export const DataMenuView: React.FC<DataMenuViewProps> = ({
   };
 
   const handleSendWhatsAppShare = (santri: any, url: string) => {
-    const rawHp =
-      santri.no_hp ||
-      santri.hp ||
-      santri.wa_wali ||
-      santri.nomor_wa ||
-      santri.whatsapp ||
-      santri.no_wa ||
-      '';
-    const cleanPhone = String(rawHp).replace(/[^0-9]/g, '');
-    const formattedPhone = cleanPhone.startsWith('0') ? '62' + cleanPhone.slice(1) : cleanPhone;
+    const rawHp = extractSantriPhone(santri);
+    const formattedPhone = formatWhatsAppPhone(rawHp);
 
     const msg =
       `Assalamu'alaikum Warahmatullahi Wabarakatuh.\n\n` +
@@ -206,7 +199,9 @@ export const DataMenuView: React.FC<DataMenuViewProps> = ({
         const progIdx = headers.findIndex((h) => h.includes('PROGRAM') || h.includes('PROG'));
         const tglIdx = headers.findIndex((h) => h.includes('TGL') || h.includes('TANGGAL') || h.includes('MASUK'));
         const ortuIdx = headers.findIndex((h) => h.includes('ORANG') || h.includes('TUA') || h.includes('WALI'));
-        const hpIdx = headers.findIndex((h) => h.includes('HP') || h.includes('WA') || h.includes('TELP') || h.includes('NO'));
+        const hpIdx = headers.findIndex(
+          (h) => h.includes('HP') || h.includes('WA') || h.includes('TELP') || h.includes('PHONE') || h === 'NO'
+        );
 
         const recordsToImport: any[] = [];
 
@@ -219,7 +214,7 @@ export const DataMenuView: React.FC<DataMenuViewProps> = ({
           const progVal = cols[progIdx >= 0 ? progIdx : 2] || 'Tahfidz';
           const tglVal = cols[tglIdx >= 0 ? tglIdx : 3] || new Date().toISOString().split('T')[0];
           const ortuVal = cols[ortuIdx >= 0 ? ortuIdx : 4] || '-';
-          const hpVal = cols[hpIdx >= 0 ? hpIdx : 5] || '-';
+          const hpVal = normalizePhoneForStorage(cols[hpIdx >= 0 ? hpIdx : 5] || '-');
 
           recordsToImport.push({
             Nama: namaVal,
@@ -252,8 +247,12 @@ export const DataMenuView: React.FC<DataMenuViewProps> = ({
     }
     setIsSubmittingManualSantri(true);
     try {
+      const normalizedPayload = {
+        ...manualSantriForm,
+        'No HP': normalizePhoneForStorage(manualSantriForm['No HP']),
+      };
       if (onSubmitSantri) {
-        await onSubmitSantri(manualSantriForm);
+        await onSubmitSantri(normalizedPayload);
       } else {
         onStartAddManual();
       }
@@ -529,7 +528,7 @@ export const DataMenuView: React.FC<DataMenuViewProps> = ({
                           </div>
                           <div>
                             <p className="text-[9px] font-bold text-teal-300/70 uppercase">No HP / WA</p>
-                            <p className="font-semibold text-teal-100">{santri.no_hp || '-'}</p>
+                            <p className="font-semibold text-teal-100">{extractSantriPhone(santri) || '-'}</p>
                           </div>
                         </div>
                       </div>
@@ -546,17 +545,8 @@ export const DataMenuView: React.FC<DataMenuViewProps> = ({
                         </button>
 
                         {(() => {
-                          const rawHp =
-                            santri.no_hp ||
-                            santri.hp ||
-                            santri.wa_wali ||
-                            santri.nomor_wa ||
-                            santri.whatsapp ||
-                            santri.no_wa ||
-                            '';
-                          const cleanHp = String(rawHp).replace(/[^0-9]/g, '');
-                          if (!cleanHp) return null;
-                          const waPhone = cleanHp.startsWith('0') ? '62' + cleanHp.slice(1) : cleanHp;
+                          const waPhone = formatWhatsAppPhone(extractSantriPhone(santri));
+                          if (!waPhone) return null;
                           return (
                             <a
                               href={`https://api.whatsapp.com/send?phone=${waPhone}`}

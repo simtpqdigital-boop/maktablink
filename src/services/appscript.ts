@@ -712,6 +712,27 @@ function getValueFromPayload(payload, header) {
   return '';
 }
 
+function writeCellValueSafe(sheet, row, col, val, headerName) {
+  var cell = sheet.getRange(row, col);
+  var strVal = val !== undefined && val !== null ? String(val) : '';
+  var hClean = cleanAlphaNum(headerName);
+  var isTextCol =
+    hClean.indexOf('hp') !== -1 ||
+    hClean.indexOf('wa') !== -1 ||
+    hClean.indexOf('telp') !== -1 ||
+    hClean.indexOf('phone') !== -1 ||
+    hClean.indexOf('nis') !== -1 ||
+    hClean.indexOf('password') !== -1;
+
+  if (
+    isTextCol ||
+    (strVal && (strVal.charAt(0) === '+' || strVal.charAt(0) === '0' || strVal.charAt(0) === '='))
+  ) {
+    cell.setNumberFormat('@');
+  }
+  cell.setValue(val !== undefined && val !== null ? val : '');
+}
+
 function submitEntry(category, payload) {
   var lock = LockService.getScriptLock();
   try { lock.waitLock(15000); } catch(e) {}
@@ -741,7 +762,7 @@ function submitEntry(category, payload) {
             for (var j = 0; j < headers.length; j++) {
               var hKey = headers[j];
               if (payload[hKey] !== undefined) {
-                sheet.getRange(u + 1, j + 1).setValue(payload[hKey]);
+                writeCellValueSafe(sheet, u + 1, j + 1, payload[hKey], hKey);
               }
             }
             SpreadsheetApp.flush();
@@ -762,8 +783,9 @@ function submitEntry(category, payload) {
           if ((newNis && existingNis === newNis) || (newNama && existingNama === newNama)) {
             for (var k = 0; k < headers.length; k++) {
               var kKey = headers[k];
-              if (payload[kKey] !== undefined) {
-                sheet.getRange(s + 1, k + 1).setValue(payload[kKey]);
+              var kVal = getValueFromPayload(payload, kKey);
+              if (payload[kKey] !== undefined || kVal !== '') {
+                writeCellValueSafe(sheet, s + 1, k + 1, payload[kKey] !== undefined ? payload[kKey] : kVal, kKey);
               }
             }
             SpreadsheetApp.flush();
@@ -790,7 +812,7 @@ function submitEntry(category, payload) {
             for (var m = 0; m < headers.length; m++) {
               var mKey = headers[m];
               if (payload[mKey] !== undefined) {
-                sheet.getRange(a + 1, m + 1).setValue(payload[mKey]);
+                writeCellValueSafe(sheet, a + 1, m + 1, payload[mKey], mKey);
               }
             }
             SpreadsheetApp.flush();
@@ -822,7 +844,10 @@ function submitEntry(category, payload) {
       }
     }
 
-    sheet.appendRow(newRow);
+    var nextRow = sheet.getLastRow() + 1;
+    for (var nc = 0; nc < headers.length; nc++) {
+      writeCellValueSafe(sheet, nextRow, nc + 1, newRow[nc], headers[nc]);
+    }
     SpreadsheetApp.flush();
     return { success: true, message: "Data berhasil disimpan!" };
   } finally {
@@ -849,7 +874,7 @@ function updateEntry(category, rowIndex, payload) {
       var key = headers[j];
       var val = getValueFromPayload(payload, key);
       if (payload[key] !== undefined || val !== '') {
-        sheet.getRange(rIdx, j + 1).setValue(payload[key] !== undefined ? payload[key] : val);
+        writeCellValueSafe(sheet, rIdx, j + 1, payload[key] !== undefined ? payload[key] : val, key);
       }
     }
     SpreadsheetApp.flush();
