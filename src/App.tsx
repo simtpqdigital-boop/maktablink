@@ -21,6 +21,7 @@ import { CustomModal } from './components/CustomModal';
 import { ErrorBoundary } from './components/ErrorBoundary';
 
 import { PublicSantriLandingView } from './components/PublicSantriLandingView';
+import { normalizeSantriPayloadPhones } from './utils/phone';
 
 export default function App() {
   const [currentUser, setCurrentUser] = useState<User | null>(() => {
@@ -795,8 +796,10 @@ export default function App() {
     if (isSubmittingRef.current) return;
     isSubmittingRef.current = true;
 
+    const cleanRecords = records.map((rec) => normalizeSantriPayloadPhones(rec));
+
     // 1. Instantly append to local state
-    const newSantriList = records.map((rec, index) => {
+    const newSantriList = cleanRecords.map((rec, index) => {
       const normalized: any = { row_index: ((appData.santri || []).length || 0) + index + 2 };
       Object.keys(rec).forEach((k) => {
         const normKey = k.toLowerCase().trim().replace(/\s+/g, '_');
@@ -815,13 +818,20 @@ export default function App() {
     setIsSyncing(true);
 
     try {
-      for (const rec of records) {
-        await runServer('submitEntry', ['santri', rec]);
+      for (const rec of cleanRecords) {
+        const res = await runServer<{ success?: boolean; message?: string; error?: string }>(
+          'submitEntry',
+          ['santri', rec]
+        );
+        if (res && res.success === false) {
+          throw new Error(res.message || res.error || 'Gagal menyimpan sebagian data santri.');
+        }
       }
-      showModal('info', `Berhasil mengimpor ${records.length} data santri!`);
+      showModal('info', `Berhasil mengimpor ${cleanRecords.length} data santri!`);
       await refreshData(false);
-    } catch (e) {
-      showModal('error', 'Gagal mengimpor sebagian data santri.');
+    } catch (e: any) {
+      showModal('error', e?.message || 'Gagal mengimpor sebagian data santri.');
+      await refreshData(false);
     } finally {
       setIsSyncing(false);
       isSubmittingRef.current = false;
@@ -834,39 +844,48 @@ export default function App() {
     payload: any,
     isNewProgramCreated: boolean
   ) => {
+    if (isSubmittingRef.current) {
+      showModal('error', 'Proses penyimpanan sebelumnya masih berjalan. Silakan tunggu sebentar lalu coba lagi.');
+      throw new Error('Submission already in progress');
+    }
+
+    const cleanPayload = cat === 'santri' ? normalizeSantriPayloadPhones(payload) : payload;
+
     // Prevent double submission within 8 seconds window
-    const payloadHash = `${cat}_${JSON.stringify(payload)}`;
+    const payloadHash = `${cat}_${editMode.active ? editMode.rowIndex : 'new'}_${JSON.stringify(cleanPayload)}`;
     const lastSubmitTime = submissionCacheRef.current.get(payloadHash) || 0;
     const now = Date.now();
     if (now - lastSubmitTime < 8000) {
       console.warn('Duplicate submission prevented by frontend throttle lock.');
       return;
     }
-    submissionCacheRef.current.set(payloadHash, now);
 
-    if (isSubmittingRef.current) return;
+    submissionCacheRef.current.set(payloadHash, now);
     isSubmittingRef.current = true;
+
+    const isEdit = editMode.active && editMode.rowIndex !== null;
+    const targetRowIndex = editMode.rowIndex;
 
     // 1. Construct normalized object for instant state update
     const defaultRowIndex = ((appData[cat] || []).length || 0) + 2;
     const normalizedNewObj: any = {
-      row_index: editMode.active && editMode.rowIndex ? editMode.rowIndex : defaultRowIndex,
+      row_index: isEdit && targetRowIndex ? targetRowIndex : defaultRowIndex,
     };
 
-    Object.keys(payload).forEach((k) => {
+    Object.keys(cleanPayload).forEach((k) => {
       const normKey = k.toLowerCase().trim().replace(/\s+/g, '_');
-      normalizedNewObj[normKey] = payload[k];
+      normalizedNewObj[normKey] = cleanPayload[k];
     });
 
-    if (payload['Nama'] || payload['nama']) normalizedNewObj.nama = payload['Nama'] || payload['nama'];
-    if (payload['NIS'] || payload['nis']) normalizedNewObj.nis = payload['NIS'] || payload['nis'];
-    if (payload['Tanggal'] || payload['tanggal']) normalizedNewObj.tanggal = payload['Tanggal'] || payload['tanggal'];
+    if (cleanPayload['Nama'] || cleanPayload['nama']) normalizedNewObj.nama = cleanPayload['Nama'] || cleanPayload['nama'];
+    if (cleanPayload['NIS'] || cleanPayload['nis']) normalizedNewObj.nis = cleanPayload['NIS'] || cleanPayload['nis'];
+    if (cleanPayload['Tanggal'] || cleanPayload['tanggal']) normalizedNewObj.tanggal = cleanPayload['Tanggal'] || cleanPayload['tanggal'];
 
     // 2. Instantly append or update local state
     setAppData((prevData) => {
       const list = [...(prevData[cat] || [])];
-      if (editMode.active && editMode.rowIndex !== null) {
-        const idx = list.findIndex((item) => item.row_index === editMode.rowIndex);
+      if (isEdit && targetRowIndex !== null) {
+        const idx = list.findIndex((item) => item.row_index === targetRowIndex);
         if (idx >= 0) {
           list[idx] = { ...list[idx], ...normalizedNewObj };
         } else {
@@ -879,8 +898,8 @@ export default function App() {
     });
 
     // Auto-append program locally if new program created
-    if (cat === 'santri' && isNewProgramCreated && payload['Program']) {
-      const newProg = payload['Program'].trim();
+    if (cat === 'santri' && isNewProgramCreated && cleanPayload['Program']) {
+      const newProg = cleanPayload['Program'].trim();
       if (newProg) {
         setAppData((prevData) => {
           const progList = [...(prevData.program || [])];
@@ -904,10 +923,9 @@ export default function App() {
     setIsSyncing(true);
 
     try {
-
       // If adding new santri with new program, submit program entry
-      if (cat === 'santri' && isNewProgramCreated && payload['Program']) {
-        const newProg = payload['Program'].trim();
+      if (cat === 'santri' && isNewProgramCreated && cleanPayload['Program']) {
+        const newProg = cleanPayload['Program'].trim();
         const exists = (appData.program || []).some(
           (p) => (p.nama_program || '').toLowerCase() === newProg.toLowerCase()
         );
@@ -919,16 +937,32 @@ export default function App() {
         }
       }
 
-      if (editMode.active && editMode.rowIndex !== null) {
-        await runServer('updateEntry', [cat, editMode.rowIndex, payload]);
-      } else {
-        await runServer('submitEntry', [cat, payload]);
+      const res = isEdit && targetRowIndex !== null
+        ? await runServer<{ success?: boolean; message?: string; error?: string }>('updateEntry', [
+            cat,
+            targetRowIndex,
+            cleanPayload,
+          ])
+        : await runServer<{ success?: boolean; message?: string; error?: string }>('submitEntry', [
+            cat,
+            cleanPayload,
+          ]);
+
+      if (res && res.success === false) {
+        throw new Error(res.message || res.error || 'Google Apps Script gagal menyimpan data.');
       }
 
       // Silent background refresh to align Google Spreadsheet row indices
       await refreshData(false);
-    } catch (e) {
-      console.error('Background submission sync warning:', e);
+    } catch (e: any) {
+      console.error('Submission error:', e);
+      submissionCacheRef.current.delete(payloadHash);
+      showModal(
+        'error',
+        `Gagal menyimpan data ke Google Sheets: ${e?.message || 'Periksa koneksi internet Anda.'}`
+      );
+      await refreshData(false);
+      throw e;
     } finally {
       setIsSyncing(false);
       isSubmittingRef.current = false;

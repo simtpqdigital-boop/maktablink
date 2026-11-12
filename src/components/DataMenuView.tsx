@@ -58,6 +58,7 @@ export const DataMenuView: React.FC<DataMenuViewProps> = ({
   // Manual Santri Modal State
   const [isAddManualModalOpen, setIsAddManualModalOpen] = useState(false);
   const [isSubmittingManualSantri, setIsSubmittingManualSantri] = useState(false);
+  const [manualSantriError, setManualSantriError] = useState<string>('');
   const [manualSantriForm, setManualSantriForm] = useState({
     Nama: '',
     NIS: '',
@@ -241,14 +242,18 @@ export const DataMenuView: React.FC<DataMenuViewProps> = ({
 
   const handleSaveManualSantri = async (e: React.FormEvent) => {
     e.preventDefault();
+    setManualSantriError('');
     if (!manualSantriForm.Nama.trim()) {
-      alert('Nama santri wajib diisi.');
+      setManualSantriError('Nama santri wajib diisi.');
       return;
     }
     setIsSubmittingManualSantri(true);
     try {
       const normalizedPayload = {
         ...manualSantriForm,
+        Nama: manualSantriForm.Nama.trim(),
+        NIS: manualSantriForm.NIS.trim(),
+        'Orang Tua': manualSantriForm['Orang Tua'].trim(),
         'No HP': normalizePhoneForStorage(manualSantriForm['No HP']),
       };
       if (onSubmitSantri) {
@@ -265,8 +270,9 @@ export const DataMenuView: React.FC<DataMenuViewProps> = ({
         'Orang Tua': '',
         'No HP': '',
       });
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error adding santri:', err);
+      setManualSantriError(err?.message || 'Gagal menyimpan data santri. Silakan coba lagi.');
     } finally {
       setIsSubmittingManualSantri(false);
     }
@@ -607,6 +613,12 @@ export const DataMenuView: React.FC<DataMenuViewProps> = ({
             </div>
 
             <form onSubmit={handleSaveManualSantri} className="space-y-3">
+              {manualSantriError && (
+                <div className="p-2.5 bg-rose-500/20 border border-rose-500/40 rounded-xl text-[11px] font-bold text-rose-200">
+                  {manualSantriError}
+                </div>
+              )}
+
               <div className="space-y-1">
                 <label className="text-[10px] font-black text-teal-300/80 uppercase ml-1">
                   Nama Santri *
@@ -685,19 +697,32 @@ export const DataMenuView: React.FC<DataMenuViewProps> = ({
                     No HP / WA
                   </label>
                   <input
-                    type="text"
+                    type="tel"
+                    inputMode="tel"
                     value={manualSantriForm['No HP']}
                     onChange={(e) => setManualSantriForm((prev) => ({ ...prev, 'No HP': e.target.value }))}
-                    placeholder="081234567..."
+                    placeholder="+62 821-4246-0614 / 62821..."
                     className="w-full p-3 bg-[#042422] border border-teal-500/30 rounded-2xl outline-none focus:border-emerald-400 font-semibold text-xs text-white placeholder-teal-200/40"
                   />
+                  {(() => {
+                    const preview = formatWhatsAppPhone(manualSantriForm['No HP']);
+                    if (!preview) return null;
+                    return (
+                      <p className="text-[9.5px] font-bold text-emerald-300/90 ml-1">
+                        Tersimpan &amp; WA: {preview}
+                      </p>
+                    );
+                  })()}
                 </div>
               </div>
 
               <div className="pt-2 flex space-x-2">
                 <button
                   type="button"
-                  onClick={() => setIsAddManualModalOpen(false)}
+                  onClick={() => {
+                    setManualSantriError('');
+                    setIsAddManualModalOpen(false);
+                  }}
                   className="w-1/3 py-3 bg-[#042422] hover:bg-teal-900/50 text-teal-200 border border-teal-500/30 font-bold rounded-2xl text-xs"
                 >
                   Batal

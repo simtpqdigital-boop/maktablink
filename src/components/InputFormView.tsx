@@ -7,7 +7,12 @@ import {
   setKeuanganPreset,
   KeuanganPreset,
 } from '../services/keuanganPreset';
-import { normalizePhoneForStorage } from '../utils/phone';
+import {
+  extractSantriPhone,
+  formatWhatsAppPhone,
+  isPhoneFieldName,
+  normalizeSantriPayloadPhones,
+} from '../utils/phone';
 
 interface InputFormViewProps {
   data: AppData;
@@ -15,7 +20,7 @@ interface InputFormViewProps {
   currentUser?: User;
   editMode: { active: boolean; category: CategoryKey; rowIndex: number | null };
   onCancelEdit: () => void;
-  onSubmitForm: (category: CategoryKey, payload: any, isNewProgram: boolean) => void;
+  onSubmitForm: (category: CategoryKey, payload: any, isNewProgram: boolean) => Promise<void> | void;
   onSubmitQuickAttendance?: (
     records: Array<{
       nama: string;
@@ -142,42 +147,62 @@ export const InputFormView: React.FC<InputFormViewProps> = ({
     const defaultList = mockFields[activeCat] || [];
     setFields(defaultList);
 
-    fetchFields(activeCat).then((resFields) => {
-      if (resFields && resFields.length > 0) {
-        setFields(resFields);
-      }
-    });
-
-    if (editMode.active && editMode.rowIndex !== null) {
-      const rowObj = (data[editMode.category] || []).find(
-        (r) => r.row_index === editMode.rowIndex
-      );
-      if (rowObj) {
+    const buildFormMap = (fieldList: string[]) => {
+      if (editMode.active && editMode.rowIndex !== null) {
+        const rowObj = (data[editMode.category] || []).find(
+          (r) => r.row_index === editMode.rowIndex
+        );
+        if (rowObj) {
+          const initialMap: Record<string, string> = {};
+          fieldList.forEach((f) => {
+            const key = f.toLowerCase().trim().replace(/\s+/g, '_');
+            let rawVal = String(rowObj[key] || rowObj[f] || '');
+            if (editMode.category === 'santri' && isPhoneFieldName(f)) {
+              const extracted = extractSantriPhone(rowObj);
+              if (!rawVal || rawVal === '#ERROR!' || rawVal === '-') {
+                rawVal = extracted;
+              }
+            }
+            if (editMode.category === 'santri' && key === 'orang_tua' && !rawVal) {
+              rawVal = String(rowObj.orang_tua || rowObj.nama_wali || rowObj.wali || '');
+            }
+            if ((key.includes('tanggal') || key.includes('tgl')) && /^\d{4}-\d{2}-\d{2}T/.test(rawVal)) {
+              rawVal = rawVal.slice(0, 10);
+            }
+            initialMap[f] = rawVal;
+          });
+          setFormData(initialMap);
+        }
+      } else {
         const initialMap: Record<string, string> = {};
-        defaultList.forEach((f) => {
+        fieldList.forEach((f) => {
           const key = f.toLowerCase().trim().replace(/\s+/g, '_');
-          let rawVal = String(rowObj[key] || rowObj[f] || '');
-          if ((key.includes('tanggal') || key.includes('tgl')) && /^\d{4}-\d{2}-\d{2}T/.test(rawVal)) {
-            rawVal = rawVal.slice(0, 10);
+          if (key.includes('tanggal')) {
+            initialMap[f] = todayDate;
+          } else if (['subuh', 'dzuhur', 'ashar', 'maghrib', 'isya'].includes(key)) {
+            initialMap[f] = 'Y';
+          } else {
+            initialMap[f] = '';
           }
-          initialMap[f] = rawVal;
         });
         setFormData(initialMap);
       }
-    } else {
-      const initialMap: Record<string, string> = {};
-      defaultList.forEach((f) => {
-        const key = f.toLowerCase().trim().replace(/\s+/g, '_');
-        if (key.includes('tanggal')) {
-          initialMap[f] = todayDate;
-        } else if (['subuh', 'dzuhur', 'ashar', 'maghrib', 'isya'].includes(key)) {
-          initialMap[f] = 'Y';
-        } else {
-          initialMap[f] = '';
-        }
-      });
-      setFormData(initialMap);
-    }
+    };
+
+    buildFormMap(defaultList);
+
+    let isMounted = true;
+    fetchFields(activeCat).then((resFields) => {
+      if (!isMounted) return;
+      if (resFields && resFields.length > 0) {
+        setFields(resFields);
+        buildFormMap(resFields);
+      }
+    });
+
+    return () => {
+      isMounted = false;
+    };
   }, [category, editMode]);
 
   useEffect(() => {
@@ -275,20 +300,15 @@ export const InputFormView: React.FC<InputFormViewProps> = ({
     if (isSubmitting) return;
 
     const activeCat = editMode.active ? editMode.category : category;
-    const finalPayload: Record<string, any> = { ...formData };
-    if (activeCat === 'santri') {
-      Object.keys(finalPayload).forEach((k) => {
-        const normKey = k.toLowerCase().trim();
-        if (/(^|[_\s./-])(hp|wa|whatsapp|telp|telepon|phone)($|[_\s./-])/i.test(normKey)) {
-          finalPayload[k] = normalizePhoneForStorage(finalPayload[k]);
-        }
-      });
-    }
+    const finalPayload =
+      activeCat === 'santri' ? normalizeSantriPayloadPhones(formData) : { ...formData };
 
     setIsSubmitting(true);
     try {
       await onSubmitForm(activeCat, finalPayload, programTab === 'new');
       setFormData({});
+    } catch (err) {
+      console.error('Submit standard error:', err);
     } finally {
       setIsSubmitting(false);
     }
@@ -1713,19 +1733,32 @@ export const InputFormView: React.FC<InputFormViewProps> = ({
               );
             }
 
-            // Default Text Input
+            // Default Text Input (with phone format helper for santri phone fields)
+            const isPhoneField = activeCat === 'santri' && isPhoneFieldName(f);
+            const phonePreview = isPhoneField ? formatWhatsAppPhone(formData[f] || '') : '';
+
             return (
               <div key={f} className="space-y-1">
                 <label className="text-[9px] font-black text-teal-300/80 uppercase ml-1">
                   {f}
                 </label>
                 <input
-                  type="text"
+                  type={isPhoneField ? 'tel' : 'text'}
+                  inputMode={isPhoneField ? 'tel' : undefined}
                   value={formData[f] || ''}
                   onChange={(e) => handleInputChange(f, e.target.value)}
-                  placeholder={`Masukkan ${f.toLowerCase()}...`}
+                  placeholder={
+                    isPhoneField
+                      ? '+62 821-4246-0614 atau 6282142460614'
+                      : `Masukkan ${f.toLowerCase()}...`
+                  }
                   className="w-full p-4 bg-[#042422] border border-teal-500/30 rounded-2xl outline-none focus:border-emerald-400 text-sm font-medium text-white placeholder-teal-200/40"
                 />
+                {phonePreview && (
+                  <p className="text-[10px] font-bold text-emerald-300/90 ml-1">
+                    Format tersimpan &amp; WA: {phonePreview}
+                  </p>
+                )}
               </div>
             );
           })}

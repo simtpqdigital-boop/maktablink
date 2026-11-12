@@ -701,6 +701,16 @@ function findTargetSheet(ss, category, createIfMissing) {
   return newSheet;
 }
 
+function isPhoneHeaderClean(hClean) {
+  return (
+    hClean.indexOf('hp') !== -1 ||
+    hClean.indexOf('wa') !== -1 ||
+    hClean.indexOf('telp') !== -1 ||
+    hClean.indexOf('telepon') !== -1 ||
+    hClean.indexOf('phone') !== -1
+  );
+}
+
 function getValueFromPayload(payload, header) {
   if (!payload) return '';
   if (payload[header] !== undefined) return payload[header];
@@ -709,18 +719,24 @@ function getValueFromPayload(payload, header) {
     var kClean = cleanAlphaNum(k);
     if (kClean === hClean) return payload[k];
   }
+  if (isPhoneHeaderClean(hClean)) {
+    for (var pk in payload) {
+      var pkClean = cleanAlphaNum(pk);
+      if (isPhoneHeaderClean(pkClean) && payload[pk] !== undefined && String(payload[pk]).trim() !== '') {
+        return payload[pk];
+      }
+    }
+  }
   return '';
 }
 
 function writeCellValueSafe(sheet, row, col, val, headerName) {
   var cell = sheet.getRange(row, col);
-  var strVal = val !== undefined && val !== null ? String(val) : '';
+  var strVal = val !== undefined && val !== null ? String(val).trim() : '';
   var hClean = cleanAlphaNum(headerName);
+  var isPhoneCol = isPhoneHeaderClean(hClean);
   var isTextCol =
-    hClean.indexOf('hp') !== -1 ||
-    hClean.indexOf('wa') !== -1 ||
-    hClean.indexOf('telp') !== -1 ||
-    hClean.indexOf('phone') !== -1 ||
+    isPhoneCol ||
     hClean.indexOf('nis') !== -1 ||
     hClean.indexOf('password') !== -1;
 
@@ -729,6 +745,8 @@ function writeCellValueSafe(sheet, row, col, val, headerName) {
     (strVal && (strVal.charAt(0) === '+' || strVal.charAt(0) === '0' || strVal.charAt(0) === '='))
   ) {
     cell.setNumberFormat('@');
+    cell.setValue(strVal);
+    return;
   }
   cell.setValue(val !== undefined && val !== null ? val : '');
 }
