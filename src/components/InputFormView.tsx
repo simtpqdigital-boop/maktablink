@@ -155,7 +155,11 @@ export const InputFormView: React.FC<InputFormViewProps> = ({
         const initialMap: Record<string, string> = {};
         defaultList.forEach((f) => {
           const key = f.toLowerCase().trim().replace(/\s+/g, '_');
-          initialMap[f] = rowObj[key] || rowObj[f] || '';
+          let rawVal = String(rowObj[key] || rowObj[f] || '');
+          if ((key.includes('tanggal') || key.includes('tgl')) && /^\d{4}-\d{2}-\d{2}T/.test(rawVal)) {
+            rawVal = rawVal.slice(0, 10);
+          }
+          initialMap[f] = rawVal;
         });
         setFormData(initialMap);
       }

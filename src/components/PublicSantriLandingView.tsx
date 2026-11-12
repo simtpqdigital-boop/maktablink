@@ -481,7 +481,13 @@ export const PublicSantriLandingView: React.FC<PublicSantriLandingViewProps> = (
                     const paginated = reversed.slice((keuanganPage - 1) * 10, keuanganPage * 10);
                     return paginated.map((k, idx) => {
                       const isLunas = (k.status || '').toLowerCase() === 'lunas';
-                      const nom = Number(k.nominal || k.jumlah || 0);
+                      const rawNom = k.nominal || k.bayar || k.jumlah || 0;
+                      const nom =
+                        typeof rawNom === 'number'
+                          ? isNaN(rawNom)
+                            ? 0
+                            : rawNom
+                          : Number(String(rawNom).replace(/[^0-9-]/g, '')) || 0;
 
                       return (
                         <div
@@ -489,8 +495,12 @@ export const PublicSantriLandingView: React.FC<PublicSantriLandingViewProps> = (
                           className="bg-[#031d1b] p-3 rounded-xl border border-teal-500/20 flex items-center justify-between"
                         >
                           <div>
-                            <p className="text-xs font-black text-white">{k.kategori || 'Infaq SPP'}</p>
-                            <p className="text-[10px] text-teal-300/60 font-medium">{k.bulan || k.tanggal || '-'}</p>
+                            <p className="text-xs font-black text-white">
+                              {k.jenis || k.kategori || 'Infaq SPP'}
+                            </p>
+                            <p className="text-[10px] text-teal-300/60 font-medium">
+                              {k.bulan || k.tanggal || k.keterangan || k.catatan || '-'}
+                            </p>
                           </div>
                           <div className="text-right">
                             <p className="text-xs font-black text-emerald-300">
@@ -547,23 +557,56 @@ export const PublicSantriLandingView: React.FC<PublicSantriLandingViewProps> = (
                   {(() => {
                     const reversed = santriMutabaah.slice().reverse();
                     const paginated = reversed.slice((mutabaahPage - 1) * 10, mutabaahPage * 10);
-                    return paginated.map((m, idx) => (
-                      <div
-                        key={idx}
-                        className="bg-[#031d1b] p-3 rounded-xl border border-teal-500/20 space-y-1 text-xs"
-                      >
-                        <div className="flex items-center justify-between text-[10px] text-teal-300/70 font-bold border-b border-teal-900/40 pb-1">
-                          <span>Tanggal: {m.tanggal || 'Hari ini'}</span>
-                          <span className="font-extrabold text-emerald-300">
-                            {m.kategori || 'Amalan Harian'}
-                          </span>
+                    return paginated.map((m, idx) => {
+                      const sholatItems = [
+                        { label: 'Subuh', val: m.subuh },
+                        { label: 'Dzuhur', val: m.dzuhur },
+                        { label: 'Ashar', val: m.ashar },
+                        { label: 'Maghrib', val: m.maghrib },
+                        { label: 'Isya', val: m.isya },
+                      ];
+
+                      return (
+                        <div
+                          key={idx}
+                          className="bg-[#031d1b] p-3 rounded-xl border border-teal-500/20 space-y-2 text-xs"
+                        >
+                          <div className="flex items-center justify-between text-[10px] text-teal-300/70 font-bold border-b border-teal-900/40 pb-1">
+                            <span>Tanggal: {m.tanggal || 'Hari ini'}</span>
+                            <span className="font-extrabold text-emerald-300">
+                              {m.kategori || 'Sholat 5 Waktu'}
+                            </span>
+                          </div>
+                          <div className="grid grid-cols-5 gap-1 text-[9.5px] text-center font-extrabold">
+                            {sholatItems.map((sh) => {
+                              const ok = String(sh.val || '').toUpperCase() === 'Y';
+                              return (
+                                <span
+                                  key={sh.label}
+                                  className={`py-1 rounded border ${
+                                    ok
+                                      ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30'
+                                      : 'bg-[#042422] text-teal-300/50 border-teal-500/20'
+                                  }`}
+                                >
+                                  {sh.label}: {sh.val || '-'}
+                                </span>
+                              );
+                            })}
+                          </div>
+                          <div className="space-y-0.5 text-[10.5px] text-teal-100">
+                            {m.tadarusan && (
+                              <p>
+                                Tadarusan: <strong className="text-emerald-300">{m.tadarusan}</strong>
+                              </p>
+                            )}
+                            {m.catatan && m.catatan !== '-' && (
+                              <p className="text-teal-200/80 italic">Catatan: {m.catatan}</p>
+                            )}
+                          </div>
                         </div>
-                        <div className="grid grid-cols-2 gap-1 pt-1 text-[11px] text-teal-100">
-                          <p>Sholat 5 Waktu: <strong className="text-emerald-300">{m.sholat || 'Lengkap'}</strong></p>
-                          <p>Tadarusan: <strong className="text-teal-200">{m.tadarusan || 'Aktif'}</strong></p>
-                        </div>
-                      </div>
-                    ));
+                      );
+                    });
                   })()}
                 </div>
                 <Pagination

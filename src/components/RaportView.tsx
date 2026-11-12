@@ -84,23 +84,30 @@ export const RaportView: React.FC<RaportViewProps> = ({ data, onShowModal }) => 
     setHasSearched(false);
   };
 
+  const parseNominal = (val: unknown): number => {
+    if (typeof val === 'number') return isNaN(val) ? 0 : val;
+    const cleaned = String(val ?? '').replace(/[^0-9-]/g, '');
+    const num = Number(cleaned);
+    return isNaN(num) ? 0 : num;
+  };
+
   // Compile full report data for selected santri
   const getSantriReportData = (santri: Santri) => {
     const sNameLower = (santri.nama || '').toLowerCase().trim();
-    const sNis = santri.nis || '';
+    const sNisLower = (santri.nis || '').toLowerCase().trim();
+    const hasValidNis = Boolean(sNisLower && sNisLower !== '-');
 
-    const absensiList = (data.absensi || []).filter(
-      (a) => (a.nama || '').toLowerCase().trim() === sNameLower || (sNis && a.nis === sNis)
-    );
-    const keuanganList = (data.keuangan || []).filter(
-      (k) => (k.nama || '').toLowerCase().trim() === sNameLower || (sNis && k.nis === sNis)
-    );
-    const mutabaahList = (data.mutabaah || []).filter(
-      (m) => (m.nama || '').toLowerCase().trim() === sNameLower || (sNis && m.nis === sNis)
-    );
-    const progressList = (data.progress || []).filter(
-      (p) => (p.nama || '').toLowerCase().trim() === sNameLower || (sNis && p.nis === sNis)
-    );
+    const matchesSantri = (recNama?: string, recNis?: string) => {
+      const rNama = (recNama || '').toLowerCase().trim();
+      const rNis = (recNis || '').toLowerCase().trim();
+      if (hasValidNis && rNis && rNis !== '-' && rNis === sNisLower) return true;
+      return Boolean(sNameLower && rNama && rNama === sNameLower);
+    };
+
+    const absensiList = (data.absensi || []).filter((a) => matchesSantri(a.nama, a.nis));
+    const keuanganList = (data.keuangan || []).filter((k) => matchesSantri(k.nama, k.nis));
+    const mutabaahList = (data.mutabaah || []).filter((m) => matchesSantri(m.nama, m.nis));
+    const progressList = (data.progress || []).filter((p) => matchesSantri(p.nama, p.nis));
 
     return { absensiList, keuanganList, mutabaahList, progressList };
   };
@@ -114,41 +121,51 @@ export const RaportView: React.FC<RaportViewProps> = ({ data, onShowModal }) => 
       santri.hp ||
       santri.wa_wali ||
       santri.nomor_wa ||
-      santri.whatsapp;
+      santri.whatsapp ||
+      santri.no_wa ||
+      santri.telp ||
+      santri.no_telp;
 
-    if (!rawPhone) {
-      onShowModal('error', 'Nomor WhatsApp Wali tidak ditemukan pada data santri ini.');
+    const cleanPhone = String(rawPhone || '').replace(/[^0-9]/g, '');
+    if (!cleanPhone) {
+      onShowModal('error', 'Nomor WhatsApp Wali tidak ditemukan atau belum diisi pada data santri ini.');
       return;
     }
 
-    const cleanPhone = String(rawPhone).replace(/[^0-9]/g, '');
     const formattedPhone = cleanPhone.startsWith('0') ? '62' + cleanPhone.slice(1) : cleanPhone;
 
-    let msg = `*LAPORAN PERKEMBANGAN SANTRI MAKTABLINK*%0A`;
-    msg += `------------------------------------------%0A`;
-    msg += `Nama: *${santri.nama.toUpperCase()}*%0A`;
-    msg += `NIS: ${santri.nis || '-'}%0A`;
-    msg += `Program: ${santri.program || 'Program Umum'}%0A%0A`;
+    const lines: string[] = [];
+    lines.push('*LAPORAN PERKEMBANGAN SANTRI MAKTABLINK*');
+    lines.push('------------------------------------------');
+    lines.push(`Nama: *${(santri.nama || '-').toUpperCase()}*`);
+    lines.push(`NIS: ${santri.nis || '-'}`);
+    lines.push(`Program: ${santri.program || 'Program Umum'}`);
+    lines.push('');
 
     // 1. Absensi
-    msg += `*1. REKAP ABSENSI*%0A`;
+    lines.push('*1. REKAP ABSENSI*');
     if (absensiList.length === 0) {
-      msg += `_- Belum ada catatan absensi-_%0A`;
+      lines.push('_- Belum ada catatan absensi-_');
     } else {
       const hadir = absensiList.filter((a) => (a.status || '').toLowerCase() === 'hadir').length;
       const izin = absensiList.filter((a) => (a.status || '').toLowerCase() === 'izin').length;
       const sakit = absensiList.filter((a) => (a.status || '').toLowerCase() === 'sakit').length;
-      const alpa = absensiList.filter((a) => (a.status || '').toLowerCase() === 'alpa').length;
-      msg += `• Hadir: ${hadir} | Izin: ${izin} | Sakit: ${sakit} | Alpa: ${alpa}%0A`;
+      const alpa = absensiList.filter((a) => {
+        const st = (a.status || '').toLowerCase();
+        return st === 'alpa' || st === 'alfa';
+      }).length;
+      lines.push(`• Hadir: ${hadir} | Izin: ${izin} | Sakit: ${sakit} | Alpa: ${alpa}`);
       absensiList.slice(-3).reverse().forEach((a) => {
-        msg += `  - ${a.tanggal || '-'}: ${a.status} ${a.keterangan ? `(${a.keterangan})` : ''}%0A`;
+        const ket = a.keterangan && a.keterangan !== '-' ? ` (${a.keterangan})` : '';
+        lines.push(`  - ${a.tanggal || '-'}: ${a.status || '-'}${ket}`);
       });
     }
 
     // 2. Progress Hafalan
-    msg += `%0A*2. PROGRESS HAFALAN & SETORAN*%0A`;
+    lines.push('');
+    lines.push('*2. PROGRESS HAFALAN & SETORAN*');
     if (progressList.length === 0) {
-      msg += `_- Belum ada catatan hafalan-_%0A`;
+      lines.push('_- Belum ada catatan hafalan-_');
     } else {
       progressList.slice(-4).reverse().forEach((p) => {
         const capaian = p.capaian || p.Capaian || 'Setoran';
@@ -165,39 +182,61 @@ export const RaportView: React.FC<RaportViewProps> = ({ data, onShowModal }) => 
           p.ayat_halaman ||
           '';
         const nilai = p.nilai || p.Nilai || p.kelancaran || '';
-        msg += `• *${capaian}* (${p.tanggal || '-'}): ${materi} ${ayatHal ? `(${ayatHal})` : ''} - Nilai: ${nilai || 'Baik'}%0A`;
+        lines.push(
+          `• *${capaian}* (${p.tanggal || '-'}): ${materi}${ayatHal ? ` (${ayatHal})` : ''} - Nilai: ${nilai || 'Baik'}`
+        );
       });
     }
 
     // 3. Mu'tabaah Yaumiyah
-    msg += `%0A*3. AMALAN YAUMIYAH (SHOLAT 5 WAKTU)*%0A`;
+    lines.push('');
+    lines.push('*3. AMALAN YAUMIYAH (SHOLAT 5 WAKTU)*');
     if (mutabaahList.length === 0) {
-      msg += `_- Belum ada catatan amalan harian-_%0A`;
+      lines.push('_- Belum ada catatan amalan harian-_');
     } else {
       const latestM = mutabaahList[mutabaahList.length - 1];
-      msg += `• Tanggal: ${latestM.tanggal || 'Terbaru'}%0A`;
-      msg += `  Subuh: ${latestM.subuh || '-'} | Dzuhur: ${latestM.dzuhur || '-'} | Ashar: ${latestM.ashar || '-'} | Maghrib: ${latestM.maghrib || '-'} | Isya: ${latestM.isya || '-'}%0A`;
+      lines.push(`• Tanggal: ${latestM.tanggal || 'Terbaru'}`);
+      lines.push(
+        `  Subuh: ${latestM.subuh || '-'} | Dzuhur: ${latestM.dzuhur || '-'} | Ashar: ${latestM.ashar || '-'} | Maghrib: ${latestM.maghrib || '-'} | Isya: ${latestM.isya || '-'}`
+      );
       if (latestM.tadarusan) {
-        msg += `  Tadarusan: ${latestM.tadarusan}%0A`;
+        lines.push(`  Tadarusan: ${latestM.tadarusan}`);
+      }
+      if (latestM.catatan && latestM.catatan !== '-') {
+        lines.push(`  Catatan: ${latestM.catatan}`);
       }
     }
 
     // 4. Laporan Keuangan
-    msg += `%0A*4. LAPORAN KEUANGAN & SYAHRIAH*%0A`;
+    lines.push('');
+    lines.push('*4. LAPORAN KEUANGAN & SYAHRIAH*');
     if (keuanganList.length === 0) {
-      msg += `_- Belum ada catatan tagihan/iuran-_%0A`;
+      lines.push('_- Belum ada catatan tagihan/iuran-_');
     } else {
       keuanganList.slice(-3).reverse().forEach((k) => {
-        const nominalStr = k.nominal ? `Rp ${Number(k.nominal).toLocaleString('id-ID')}` : 'Rp 0';
-        msg += `• ${k.kategori || 'Tagihan'}: ${nominalStr} [${(k.status || 'Belum Lunas').toUpperCase()}]%0A`;
+        const nom = parseNominal(k.nominal || k.bayar || k.jumlah || 0);
+        const nominalStr = `Rp ${nom.toLocaleString('id-ID')}`;
+        const jenisKeu = k.jenis || k.kategori || 'Tagihan';
+        lines.push(`• ${jenisKeu}: ${nominalStr} [${(k.status || 'Belum Lunas').toUpperCase()}]`);
       });
     }
 
-    msg += `%0A------------------------------------------%0A`;
-    msg += `_Laporan otomatis oleh MaktabLink TPQ Digital._`;
+    lines.push('');
+    lines.push('------------------------------------------');
+    lines.push('_Laporan otomatis oleh MaktabLink TPQ Digital._');
 
-    const waUrl = `https://wa.me/${formattedPhone}?text=${msg}`;
-    window.open(waUrl, '_blank');
+    const msg = lines.join('\n');
+    const waUrl = `https://api.whatsapp.com/send?phone=${formattedPhone}&text=${encodeURIComponent(msg)}`;
+    const opened = window.open(waUrl, '_blank', 'noopener,noreferrer');
+    if (!opened) {
+      const link = document.createElement('a');
+      link.href = waUrl;
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
   };
 
   return (
@@ -292,7 +331,10 @@ export const RaportView: React.FC<RaportViewProps> = ({ data, onShowModal }) => 
           const hadirCount = absensiList.filter((a) => (a.status || '').toLowerCase() === 'hadir').length;
           const izinCount = absensiList.filter((a) => (a.status || '').toLowerCase() === 'izin').length;
           const sakitCount = absensiList.filter((a) => (a.status || '').toLowerCase() === 'sakit').length;
-          const alpaCount = absensiList.filter((a) => (a.status || '').toLowerCase() === 'alpa').length;
+          const alpaCount = absensiList.filter((a) => {
+            const st = (a.status || '').toLowerCase();
+            return st === 'alpa' || st === 'alfa';
+          }).length;
 
           return (
             <div className="space-y-3 animate-in fade-in slide-in-from-bottom-2 duration-300">
@@ -332,13 +374,19 @@ export const RaportView: React.FC<RaportViewProps> = ({ data, onShowModal }) => 
                   <div className="bg-[#031d1b] p-2 rounded-xl border border-teal-500/15">
                     <p className="text-[9.5px] text-teal-300/60 font-bold uppercase">Nama Wali</p>
                     <p className="font-extrabold text-white truncate mt-0.5">
-                      {selectedSantri.nama_wali || selectedSantri.wali || '-'}
+                      {selectedSantri.nama_wali || selectedSantri.orang_tua || selectedSantri.wali || '-'}
                     </p>
                   </div>
                   <div className="bg-[#031d1b] p-2 rounded-xl border border-teal-500/15">
                     <p className="text-[9.5px] text-teal-300/60 font-bold uppercase">WhatsApp Wali</p>
                     <p className="font-extrabold text-emerald-300 truncate mt-0.5">
-                      {selectedSantri.no_hp || selectedSantri.hp || selectedSantri.wa_wali || '-'}
+                      {selectedSantri.no_hp ||
+                        selectedSantri.hp ||
+                        selectedSantri.wa_wali ||
+                        selectedSantri.nomor_wa ||
+                        selectedSantri.whatsapp ||
+                        selectedSantri.no_wa ||
+                        '-'}
                     </p>
                   </div>
                   {selectedSantri.alamat && (
@@ -433,14 +481,14 @@ export const RaportView: React.FC<RaportViewProps> = ({ data, onShowModal }) => 
                         className="flex items-center justify-between bg-[#031d1b] border border-teal-500/20 p-2.5 rounded-xl text-xs"
                       >
                         <div>
-                          <p className="font-extrabold text-white">{k.kategori || 'Iuran Santri'}</p>
+                          <p className="font-extrabold text-white">{k.jenis || k.kategori || 'Iuran Santri'}</p>
                           <p className="text-[10px] text-teal-300/60 font-medium">
-                            {k.tanggal || k.catatan || '-'}
+                            {k.tanggal || k.keterangan || k.catatan || '-'}
                           </p>
                         </div>
                         <div className="text-right">
                           <p className="font-extrabold text-emerald-300 font-['Outfit']">
-                            {k.nominal ? `Rp ${Number(k.nominal).toLocaleString('id-ID')}` : 'Rp 0'}
+                            {`Rp ${parseNominal(k.nominal || k.bayar || k.jumlah || 0).toLocaleString('id-ID')}`}
                           </p>
                           <span
                             className={`inline-block text-[9px] px-2 py-0.5 rounded font-black uppercase mt-0.5 ${

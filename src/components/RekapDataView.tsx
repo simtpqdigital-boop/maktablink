@@ -165,7 +165,7 @@ export const RekapDataView: React.FC<RekapDataViewProps> = ({
       const sObj = santriList.find(
         (s) =>
           (s.nama && s.nama.toLowerCase().trim() === rNama) ||
-          (rNis && s.nis && s.nis === rNis)
+          (rNis && rNis !== '-' && s.nis && String(s.nis).trim() === rNis)
       );
 
       const sProg = (sObj?.program || row.program || '').toLowerCase().trim();
@@ -187,7 +187,11 @@ export const RekapDataView: React.FC<RekapDataViewProps> = ({
   let groupedRecords: Record<string, any[]> = {};
   if (isGroupedCategory) {
     filteredData.forEach((row: any) => {
-      const groupKey = (row.nama || row.nama_santri || row.informasi || 'Umum').trim();
+      const groupKey = (
+        category === 'informasi'
+          ? row.judul || row.nama || row.nama_santri || row.informasi || 'Pengumuman'
+          : row.nama || row.nama_santri || row.informasi || 'Umum'
+      ).trim();
       if (!groupedRecords[groupKey]) groupedRecords[groupKey] = [];
       groupedRecords[groupKey].push(row);
     });
@@ -691,6 +695,127 @@ export const RekapDataView: React.FC<RekapDataViewProps> = ({
                                   );
                                 }
 
+                                if (category === 'keuangan') {
+                                  const jenisKeu = item.jenis || item.kategori || 'Pembayaran';
+                                  const rawNom = item.nominal || item.bayar || item.jumlah || 0;
+                                  const parsedNom =
+                                    typeof rawNom === 'number'
+                                      ? rawNom
+                                      : Number(String(rawNom).replace(/[^0-9-]/g, '')) || 0;
+                                  const ketKeu = item.keterangan || item.catatan || '';
+
+                                  return (
+                                    <tr
+                                      key={item.row_index}
+                                      className="hover:bg-teal-500/10 transition-colors"
+                                    >
+                                      <td className="p-3 font-bold text-white whitespace-nowrap align-top">
+                                        <div>{item.tanggal || '-'}</div>
+                                        <span
+                                          className={`text-[8px] px-1.5 py-0.5 rounded font-black uppercase inline-block mt-1 font-['Outfit'] ${
+                                            (item.status || '').toLowerCase() === 'lunas'
+                                              ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                                              : 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
+                                          }`}
+                                        >
+                                          {item.status || 'Belum Lunas'}
+                                        </span>
+                                      </td>
+                                      <td className="p-3 text-teal-100 align-top space-y-1">
+                                        <div className="font-extrabold text-white text-xs">
+                                          {jenisKeu}
+                                        </div>
+                                        <div className="text-[11px] font-black text-emerald-300 font-['Outfit']">
+                                          Rp {parsedNom.toLocaleString('id-ID')}
+                                        </div>
+                                        {ketKeu && ketKeu !== '-' && (
+                                          <div className="text-[10px] text-teal-200/80 italic">
+                                            {ketKeu}
+                                          </div>
+                                        )}
+                                      </td>
+                                      <td className="p-3 text-right align-top">
+                                        <div className="flex justify-end space-x-1.5">
+                                          <button
+                                            type="button"
+                                            onClick={() => onStartEdit(category, item.row_index)}
+                                            className="w-7 h-7 flex items-center justify-center bg-teal-900/60 text-emerald-300 border border-teal-500/30 rounded-lg hover:bg-teal-800 transition-colors"
+                                            title="Edit Data"
+                                          >
+                                            <Edit2 className="w-3 h-3" />
+                                          </button>
+                                          <button
+                                            type="button"
+                                            onClick={() => onDeleteRow(category, item.row_index)}
+                                            className="w-7 h-7 flex items-center justify-center bg-rose-950/60 text-rose-300 border border-rose-500/30 rounded-lg hover:bg-rose-900 transition-colors"
+                                            title="Hapus Data Ini"
+                                          >
+                                            <Trash2 className="w-3 h-3" />
+                                          </button>
+                                        </div>
+                                      </td>
+                                    </tr>
+                                  );
+                                }
+
+                                if (category === 'informasi') {
+                                  const judulInfo = item.judul || item.informasi || '-';
+                                  const isiInfo = item.isi || item.catatan || '';
+                                  const katInfo = item.kategori || '';
+                                  const targetInfo = item.ditujukan || '';
+
+                                  return (
+                                    <tr
+                                      key={item.row_index}
+                                      className="hover:bg-teal-500/10 transition-colors"
+                                    >
+                                      <td className="p-3 font-bold text-white whitespace-nowrap align-top">
+                                        <div>{item.tanggal || '-'}</div>
+                                        {katInfo && (
+                                          <span className="text-[8px] bg-teal-900/60 text-emerald-300 border border-teal-500/30 px-1.5 py-0.5 rounded font-black uppercase inline-block mt-1 font-['Outfit']">
+                                            {katInfo}
+                                          </span>
+                                        )}
+                                      </td>
+                                      <td className="p-3 text-teal-100 align-top space-y-1">
+                                        <div className="font-extrabold text-white text-xs">
+                                          {judulInfo}
+                                        </div>
+                                        {isiInfo && (
+                                          <div className="text-[10.5px] text-teal-100/90 leading-relaxed">
+                                            {isiInfo}
+                                          </div>
+                                        )}
+                                        {targetInfo && (
+                                          <div className="text-[9.5px] text-emerald-300/80 font-bold">
+                                            Ditujukan: {targetInfo}
+                                          </div>
+                                        )}
+                                      </td>
+                                      <td className="p-3 text-right align-top">
+                                        <div className="flex justify-end space-x-1.5">
+                                          <button
+                                            type="button"
+                                            onClick={() => onStartEdit(category, item.row_index)}
+                                            className="w-7 h-7 flex items-center justify-center bg-teal-900/60 text-emerald-300 border border-teal-500/30 rounded-lg hover:bg-teal-800 transition-colors"
+                                            title="Edit Pengumuman"
+                                          >
+                                            <Edit2 className="w-3 h-3" />
+                                          </button>
+                                          <button
+                                            type="button"
+                                            onClick={() => onDeleteRow(category, item.row_index)}
+                                            className="w-7 h-7 flex items-center justify-center bg-rose-950/60 text-rose-300 border border-rose-500/30 rounded-lg hover:bg-rose-900 transition-colors"
+                                            title="Hapus Data Ini"
+                                          >
+                                            <Trash2 className="w-3 h-3" />
+                                          </button>
+                                        </div>
+                                      </td>
+                                    </tr>
+                                  );
+                                }
+
                                 return (
                                   <tr
                                     key={item.row_index}
@@ -701,8 +826,8 @@ export const RekapDataView: React.FC<RekapDataViewProps> = ({
                                     </td>
                                     <td className="p-3 text-teal-100">
                                       {item.materi || item.status || item.informasi || '-'}
-                                      {item.nominal && ` (Rp ${Number(item.nominal).toLocaleString('id-ID')})`}
-                                      {item.catatan && ` (${item.catatan})`}
+                                      {(item.keterangan || item.catatan) &&
+                                        ` (${item.keterangan || item.catatan})`}
                                     </td>
                                     <td className="p-3 text-right">
                                       <div className="flex justify-end space-x-1.5">

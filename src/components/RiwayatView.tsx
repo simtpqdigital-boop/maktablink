@@ -211,11 +211,19 @@ export const RiwayatView: React.FC<RiwayatViewProps> = ({ data }) => {
                     <div className="space-y-1.5 text-[10px]">
                       <div className="flex justify-between">
                         <span className="text-slate-400 uppercase font-bold">Materi:</span>
-                        <span className="font-bold text-slate-700">{item.materi || '-'}</span>
+                        <span className="font-bold text-slate-700">
+                          {item['surah / jilid / materi'] ||
+                            item['surah_/_jilid_/_materi'] ||
+                            item.surah_jilid_materi ||
+                            item.materi ||
+                            '-'}
+                        </span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-slate-400 uppercase font-bold">Hafalan:</span>
-                        <span className="font-black text-purple-700">{item.hafalan || '-'}</span>
+                        <span className="text-slate-400 uppercase font-bold">Capaian:</span>
+                        <span className="font-black text-purple-700">
+                          {item.capaian || item.hafalan || item['ayat / halaman'] || item.ayat_halaman || '-'}
+                        </span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-slate-400 uppercase font-bold">Catatan:</span>
@@ -244,12 +252,17 @@ export const RiwayatView: React.FC<RiwayatViewProps> = ({ data }) => {
                     <div className="space-y-1.5 text-[10px]">
                       <div className="flex justify-between">
                         <span className="text-slate-400 uppercase font-bold">Kategori:</span>
-                        <span className="font-black text-amber-700 uppercase">{item.kategori || '-'}</span>
+                        <span className="font-black text-amber-700 uppercase">
+                          {item.jenis || item.kategori || '-'}
+                        </span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-slate-400 uppercase font-bold">Tagihan:</span>
                         <span className="font-bold text-slate-700">
-                          Rp {parseInt(item.nominal || '0', 10).toLocaleString('id-ID')}
+                          Rp{' '}
+                          {(
+                            Number(String(item.nominal || item.bayar || '0').replace(/[^0-9-]/g, '')) || 0
+                          ).toLocaleString('id-ID')}
                         </span>
                       </div>
                     </div>

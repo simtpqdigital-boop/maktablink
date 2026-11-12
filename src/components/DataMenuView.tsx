@@ -85,7 +85,14 @@ export const DataMenuView: React.FC<DataMenuViewProps> = ({
   };
 
   const handleSendWhatsAppShare = (santri: any, url: string) => {
-    const rawHp = santri.no_hp || santri.hp || santri.wa_wali || '';
+    const rawHp =
+      santri.no_hp ||
+      santri.hp ||
+      santri.wa_wali ||
+      santri.nomor_wa ||
+      santri.whatsapp ||
+      santri.no_wa ||
+      '';
     const cleanPhone = String(rawHp).replace(/[^0-9]/g, '');
     const formattedPhone = cleanPhone.startsWith('0') ? '62' + cleanPhone.slice(1) : cleanPhone;
 
@@ -102,7 +109,16 @@ export const DataMenuView: React.FC<DataMenuViewProps> = ({
       ? `https://api.whatsapp.com/send?phone=${formattedPhone}&text=${encodeURIComponent(msg)}`
       : `https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`;
 
-    window.open(waUrl, '_blank');
+    const opened = window.open(waUrl, '_blank', 'noopener,noreferrer');
+    if (!opened) {
+      const link = document.createElement('a');
+      link.href = waUrl;
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
   };
 
   const santriList = data.santri || [];
@@ -529,17 +545,30 @@ export const DataMenuView: React.FC<DataMenuViewProps> = ({
                           <span>Edit</span>
                         </button>
 
-                        {santri.no_hp && (
-                          <a
-                            href={`https://wa.me/${santri.no_hp.replace(/[^0-9]/g, '')}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex-1 py-2.5 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 font-bold rounded-xl text-xs transition-colors flex items-center justify-center space-x-1"
-                          >
-                            <Phone className="w-3.5 h-3.5 text-emerald-300" />
-                            <span>WA Wali</span>
-                          </a>
-                        )}
+                        {(() => {
+                          const rawHp =
+                            santri.no_hp ||
+                            santri.hp ||
+                            santri.wa_wali ||
+                            santri.nomor_wa ||
+                            santri.whatsapp ||
+                            santri.no_wa ||
+                            '';
+                          const cleanHp = String(rawHp).replace(/[^0-9]/g, '');
+                          if (!cleanHp) return null;
+                          const waPhone = cleanHp.startsWith('0') ? '62' + cleanHp.slice(1) : cleanHp;
+                          return (
+                            <a
+                              href={`https://api.whatsapp.com/send?phone=${waPhone}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex-1 py-2.5 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 font-bold rounded-xl text-xs transition-colors flex items-center justify-center space-x-1"
+                            >
+                              <Phone className="w-3.5 h-3.5 text-emerald-300" />
+                              <span>WA Wali</span>
+                            </a>
+                          );
+                        })()}
 
                         <button
                           type="button"

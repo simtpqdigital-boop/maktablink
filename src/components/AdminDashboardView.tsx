@@ -55,10 +55,15 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
   const totalProgram = data.program?.length || 0;
   const totalInformasi = data.informasi?.length || 0;
   
+  const parseNominal = (val: unknown): number => {
+    if (typeof val === 'number') return isNaN(val) ? 0 : val;
+    const num = Number(String(val ?? '').replace(/[^0-9-]/g, ''));
+    return isNaN(num) ? 0 : num;
+  };
+
   // Keuangan Total Calculation
   const totalNominalKeuangan = (data.keuangan || []).reduce((acc, curr) => {
-    const val = Number(curr.nominal || curr.jumlah || 0);
-    return acc + (isNaN(val) ? 0 : val);
+    return acc + parseNominal(curr.nominal || curr.bayar || curr.jumlah || 0);
   }, 0);
 
   const handleQuickSelect = (nama: string, status: string) => {
@@ -400,7 +405,13 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
                     {p.nama}
                   </h5>
                   <p className="text-[9px] text-teal-200/70 font-medium mt-0.5 truncate">
-                    {p.hafalan || p.materi || '-'}
+                    {p['surah / jilid / materi'] ||
+                      p['surah_/_jilid_/_materi'] ||
+                      p.surah_jilid_materi ||
+                      p.hafalan ||
+                      p.materi ||
+                      p.capaian ||
+                      '-'}
                   </p>
                 </div>
               </div>
@@ -439,12 +450,12 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
                         {k.nama}
                       </h5>
                       <p className="text-[8px] text-teal-200/60 font-bold uppercase mt-0.5 truncate">
-                        {k.kategori || 'Pembayaran'}
+                        {k.jenis || k.kategori || 'Pembayaran'}
                       </p>
                     </div>
                   </div>
                   <span className="text-[10px] font-black text-emerald-300 bg-emerald-500/20 border border-emerald-500/30 px-2 py-1 rounded-lg shrink-0 font-['Outfit']">
-                    Rp {parseInt(k.nominal || k.bayar || '0', 10).toLocaleString('id-ID')}
+                    Rp {parseNominal(k.nominal || k.bayar || k.jumlah || 0).toLocaleString('id-ID')}
                   </span>
                 </div>
               ))
