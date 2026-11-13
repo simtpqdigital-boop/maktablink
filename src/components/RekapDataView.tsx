@@ -164,11 +164,11 @@ export const RekapDataView: React.FC<RekapDataViewProps> = ({
       // Find santri object
       const sObj = santriList.find(
         (s) =>
-          (s.nama && s.nama.toLowerCase().trim() === rNama) ||
+          (s.nama && String(s.nama).toLowerCase().trim() === rNama) ||
           (rNis && rNis !== '-' && s.nis && String(s.nis).trim() === rNis)
       );
 
-      const sProg = (sObj?.program || row.program || '').toLowerCase().trim();
+      const sProg = String(sObj?.program || row.program || '').toLowerCase().trim();
       if (sProg !== selectedProgram.toLowerCase().trim()) {
         return false;
       }
@@ -177,7 +177,7 @@ export const RekapDataView: React.FC<RekapDataViewProps> = ({
     if (!searchTerm.trim()) return true;
     const term = searchTerm.toLowerCase().trim();
     return Object.values(row).some((val) =>
-      String(val).toLowerCase().includes(term)
+      String(val ?? '').toLowerCase().includes(term)
     );
   });
 
@@ -187,7 +187,7 @@ export const RekapDataView: React.FC<RekapDataViewProps> = ({
   let groupedRecords: Record<string, any[]> = {};
   if (isGroupedCategory) {
     filteredData.forEach((row: any) => {
-      const groupKey = (
+      const groupKey = String(
         category === 'informasi'
           ? row.judul || row.nama || row.nama_santri || row.informasi || 'Pengumuman'
           : row.nama || row.nama_santri || row.informasi || 'Umum'
@@ -343,10 +343,10 @@ export const RekapDataView: React.FC<RekapDataViewProps> = ({
           </div>
         ) : (
           rawCategoryData.map((row: any) => {
-            const progName = row.nama_program || row.nama;
+            const progName = String(row.nama_program || row.program || row.nama || 'Tanpa Nama Program');
             const desc = row.deskripsi || '-';
             const enrolledSantri = santriList.filter(
-              (s) => (s.program || '').toLowerCase() === progName.toLowerCase()
+              (s) => String(s.program || '').toLowerCase().trim() === progName.toLowerCase().trim()
             );
 
             const cardId = `card-program-${row.row_index}`;
@@ -386,6 +386,34 @@ export const RekapDataView: React.FC<RekapDataViewProps> = ({
 
                 {isOpen && (
                   <div className="bg-[#042422]/90 p-4 pt-2 border-t border-teal-500/20">
+                    {(() => {
+                      const mTilawah = row.materi_tilawah || row['materi tilawah'] || '';
+                      const mHafalan = row.materi_hafalan || row['materi hafalan'] || '';
+                      const mPelajaran = row.materi_pelajaran || row['materi pelajaran'] || '';
+                      if (!mTilawah && !mHafalan && !mPelajaran) return null;
+                      return (
+                        <div className="bg-[#031d1b] rounded-xl p-3 border border-teal-500/25 mb-3 space-y-1.5 text-[10px]">
+                          {mTilawah && (
+                            <div>
+                              <span className="font-black text-emerald-300 uppercase">Materi Tilawah: </span>
+                              <span className="text-teal-100">{mTilawah}</span>
+                            </div>
+                          )}
+                          {mHafalan && (
+                            <div>
+                              <span className="font-black text-emerald-300 uppercase">Materi Hafalan: </span>
+                              <span className="text-teal-100">{mHafalan}</span>
+                            </div>
+                          )}
+                          {mPelajaran && (
+                            <div>
+                              <span className="font-black text-emerald-300 uppercase">Materi Pelajaran: </span>
+                              <span className="text-teal-100">{mPelajaran}</span>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })()}
                     <div className="bg-[#031d1b] rounded-xl p-3 border border-teal-500/25 mb-3 max-h-60 overflow-y-auto space-y-2">
                       <div className="text-[9px] font-black text-teal-300/80 uppercase tracking-wider mb-2 font-['Outfit']">
                         Daftar Santri Terdaftar di Kelas Ini
@@ -472,7 +500,7 @@ export const RekapDataView: React.FC<RekapDataViewProps> = ({
 
                 // Lookup santri program if available
                 const santriObj = santriList.find(
-                  (s) => (s.nama || '').toLowerCase().trim() === groupName.toLowerCase().trim()
+                  (s) => String(s.nama || '').toLowerCase().trim() === String(groupName || '').toLowerCase().trim()
                 );
                 const santriProgram = santriObj?.program || '';
 
@@ -538,7 +566,7 @@ export const RekapDataView: React.FC<RekapDataViewProps> = ({
                               {items.map((item) => {
                                 if (category === 'mutabaah') {
                                   const sholatBadge = (val: string, label: string) => {
-                                    const ok = (val || 'T').toUpperCase() === 'Y';
+                                    const ok = String(val || 'T').toUpperCase() === 'Y';
                                     return (
                                       <span
                                         key={label}
@@ -713,7 +741,7 @@ export const RekapDataView: React.FC<RekapDataViewProps> = ({
                                         <div>{item.tanggal || '-'}</div>
                                         <span
                                           className={`text-[8px] px-1.5 py-0.5 rounded font-black uppercase inline-block mt-1 font-['Outfit'] ${
-                                            (item.status || '').toLowerCase() === 'lunas'
+                                            String(item.status || '').toLowerCase() === 'lunas'
                                               ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
                                               : 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
                                           }`}
@@ -953,6 +981,12 @@ export const RekapDataView: React.FC<RekapDataViewProps> = ({
                       <div className="bg-[#031d1b] rounded-xl p-3 border border-teal-500/25 mb-3 space-y-1">
                         {Object.entries(row).map(([key, val]) => {
                           if (key === 'row_index' || !val) return null;
+                          if (
+                            key.includes(' ') &&
+                            row[key.toLowerCase().trim().replace(/\s+/g, '_')] !== undefined
+                          ) {
+                            return null;
+                          }
                           return (
                             <div
                               key={key}

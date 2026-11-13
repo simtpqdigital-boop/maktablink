@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import {
   getAppScriptUrl,
   mockFields,
+  normalizeAppDataKeys,
   runServer,
   setAppScriptUrl,
 } from './services/appscript';
@@ -89,7 +90,7 @@ export default function App() {
     try {
       const saved = localStorage.getItem('santrilink_cached_appdata');
       if (saved) {
-        const parsed = JSON.parse(saved);
+        const parsed = normalizeAppDataKeys(JSON.parse(saved));
         return {
           santri: parsed.santri || [],
           absensi: parsed.absensi || [],

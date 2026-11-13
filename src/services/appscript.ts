@@ -116,6 +116,30 @@ const recentResultsCache = new Map<string, { time: number; res: any }>();
 // Sequential execution queue for write operations
 let writeQueuePromise: Promise<any> = Promise.resolve();
 
+export function normalizeRowKeys<T extends Record<string, any>>(row: T): T {
+  if (!row || typeof row !== 'object') return row;
+  const out: Record<string, any> = { ...row };
+  Object.entries(row).forEach(([k, v]) => {
+    if (k === 'row_index') return;
+    const normKey = k.toLowerCase().trim().replace(/\s+/g, '_');
+    if (out[normKey] === undefined || (out[normKey] === '' && v !== undefined && v !== '')) {
+      out[normKey] = v;
+    }
+  });
+  return out as T;
+}
+
+export function normalizeAppDataKeys(raw: any): any {
+  if (!raw || typeof raw !== 'object') return raw;
+  const normalized: Record<string, any> = { ...raw };
+  Object.keys(raw).forEach((cat) => {
+    if (Array.isArray(raw[cat])) {
+      normalized[cat] = raw[cat].map((item: any) => normalizeRowKeys(item));
+    }
+  });
+  return normalized;
+}
+
 /**
  * Universal Single AppScript Runner
  */
@@ -172,6 +196,9 @@ export async function runServer<T = any>(method: string, args: any[] = []): Prom
           throw new Error(
             'Respon Google Apps Script bukan JSON yang valid. Pastikan Web App sudah di-deploy ulang (New version) dengan akses "Anyone".'
           );
+        }
+        if (method === 'getAllData') {
+          return normalizeAppDataKeys(resData) as T;
         }
         return resData as T;
       } catch (err: any) {

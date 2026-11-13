@@ -85,6 +85,7 @@ export const InputFormView: React.FC<InputFormViewProps> = ({
   const [formData, setFormData] = useState<Record<string, string>>({});
   const [programTab, setProgramTab] = useState<'select' | 'new'>('select');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [standardFormError, setStandardFormError] = useState<string>('');
 
   // States for Progress Hafalan & Mu'tabaah Special Layout
   const [selectedProgram, setSelectedProgram] = useState<string>('');
@@ -143,11 +144,12 @@ export const InputFormView: React.FC<InputFormViewProps> = ({
   }, [category, isAdmin]);
 
   useEffect(() => {
+    setStandardFormError('');
     const activeCat = editMode.active ? editMode.category : category;
     const defaultList = mockFields[activeCat] || [];
     setFields(defaultList);
 
-    const buildFormMap = (fieldList: string[]) => {
+    const buildFormMap = (fieldList: string[], preserveTyped = false) => {
       if (editMode.active && editMode.rowIndex !== null) {
         const rowObj = (data[editMode.category] || []).find(
           (r) => r.row_index === editMode.rowIndex
@@ -156,7 +158,8 @@ export const InputFormView: React.FC<InputFormViewProps> = ({
           const initialMap: Record<string, string> = {};
           fieldList.forEach((f) => {
             const key = f.toLowerCase().trim().replace(/\s+/g, '_');
-            let rawVal = String(rowObj[key] || rowObj[f] || '');
+            const spaceKey = f.toLowerCase().trim();
+            let rawVal = String(rowObj[key] ?? rowObj[spaceKey] ?? rowObj[f] ?? '');
             if (editMode.category === 'santri' && isPhoneFieldName(f)) {
               const extracted = extractSantriPhone(rowObj);
               if (!rawVal || rawVal === '#ERROR!' || rawVal === '-') {
@@ -164,14 +167,23 @@ export const InputFormView: React.FC<InputFormViewProps> = ({
               }
             }
             if (editMode.category === 'santri' && key === 'orang_tua' && !rawVal) {
-              rawVal = String(rowObj.orang_tua || rowObj.nama_wali || rowObj.wali || '');
+              rawVal = String(rowObj.orang_tua || rowObj['orang tua'] || rowObj.nama_wali || rowObj.wali || '');
             }
             if ((key.includes('tanggal') || key.includes('tgl')) && /^\d{4}-\d{2}-\d{2}T/.test(rawVal)) {
               rawVal = rawVal.slice(0, 10);
             }
             initialMap[f] = rawVal;
           });
-          setFormData(initialMap);
+          setFormData((prev) => {
+            if (!preserveTyped) return initialMap;
+            const merged = { ...initialMap };
+            Object.keys(prev).forEach((k) => {
+              if (prev[k] !== undefined && prev[k] !== '') {
+                merged[k] = prev[k];
+              }
+            });
+            return merged;
+          });
         }
       } else {
         const initialMap: Record<string, string> = {};
@@ -185,18 +197,27 @@ export const InputFormView: React.FC<InputFormViewProps> = ({
             initialMap[f] = '';
           }
         });
-        setFormData(initialMap);
+        setFormData((prev) => {
+          if (!preserveTyped) return initialMap;
+          const merged = { ...initialMap };
+          Object.keys(prev).forEach((k) => {
+            if (prev[k] !== undefined && prev[k] !== '') {
+              merged[k] = prev[k];
+            }
+          });
+          return merged;
+        });
       }
     };
 
-    buildFormMap(defaultList);
+    buildFormMap(defaultList, false);
 
     let isMounted = true;
     fetchFields(activeCat).then((resFields) => {
       if (!isMounted) return;
       if (resFields && resFields.length > 0) {
         setFields(resFields);
-        buildFormMap(resFields);
+        buildFormMap(resFields, true);
       }
     });
 
@@ -233,6 +254,7 @@ export const InputFormView: React.FC<InputFormViewProps> = ({
   });
 
   const handleInputChange = (label: string, value: string) => {
+    if (standardFormError) setStandardFormError('');
     setFormData((prev) => ({ ...prev, [label]: value }));
   };
 
@@ -298,10 +320,27 @@ export const InputFormView: React.FC<InputFormViewProps> = ({
   const handleSubmitStandard = async (e: React.FormEvent) => {
     e.preventDefault();
     if (isSubmitting) return;
+    setStandardFormError('');
 
     const activeCat = editMode.active ? editMode.category : category;
-    const finalPayload =
+    const finalPayload: Record<string, any> =
       activeCat === 'santri' ? normalizeSantriPayloadPhones(formData) : { ...formData };
+
+    if (activeCat === 'program') {
+      const namaProgKey =
+        fields.find((f) => f.toLowerCase().trim().replace(/\s+/g, '_') === 'nama_program') ||
+        'Nama Program';
+      const namaProgVal = String(finalPayload[namaProgKey] || '').trim();
+      if (!namaProgVal) {
+        setStandardFormError('Nama Program wajib diisi terlebih dahulu.');
+        return;
+      }
+      Object.keys(finalPayload).forEach((k) => {
+        if (typeof finalPayload[k] === 'string') {
+          finalPayload[k] = finalPayload[k].trim();
+        }
+      });
+    }
 
     setIsSubmitting(true);
     try {
@@ -1774,6 +1813,12 @@ export const InputFormView: React.FC<InputFormViewProps> = ({
               </div>
             );
           })}
+
+          {standardFormError && (
+            <div className="p-3 bg-rose-500/15 border border-rose-400/40 rounded-2xl text-xs font-bold text-rose-200">
+              {standardFormError}
+            </div>
+          )}
 
           <div className="pt-2 flex space-x-2">
             {editMode.active && (
