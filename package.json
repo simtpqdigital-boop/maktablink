@@ -3,6 +3,7 @@
   "private": true,
   "version": "1.0.0",
   "type": "module",
+  "packageManager": "bun@1.4.4",
   "scripts": {
     "dev": "vite --port=3000 --host=0.0.0.0",
     "build": "node -e \"const fs=require('fs');['_redirects','public/_redirects','dist/_redirects'].forEach(f=>{try{fs.unlinkSync(f)}catch(e){}})\" && vite build && node -e \"const fs=require('fs');['_redirects','public/_redirects','dist/_redirects'].forEach(f=>{try{fs.unlinkSync(f)}catch(e){}})\"",
