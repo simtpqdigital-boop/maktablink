@@ -1,17 +1,21 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
+  AlertCircle,
   ArrowRight,
   BarChart3,
   BookOpen,
   CalendarCheck,
   Check,
+  CheckCircle2,
   CreditCard,
   Edit3,
+  Eye,
   GraduationCap,
   Heart,
   Info,
   LineChart,
   PieChart,
+  Search,
   Star,
   UserCheck,
   Wallet,
@@ -38,6 +42,9 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
   const [isPresetModalOpen, setIsPresetModalOpen] = useState(false);
   const [presetForm, setPresetForm] = useState<KeuanganPreset>(getKeuanganPreset());
   const [presetSavedFeedback, setPresetSavedFeedback] = useState(false);
+  const [isPaymentDetailOpen, setIsPaymentDetailOpen] = useState(false);
+  const [paymentFilterTab, setPaymentFilterTab] = useState<'semua' | 'sudah' | 'belum'>('semua');
+  const [paymentSearch, setPaymentSearch] = useState('');
 
   const handleSavePreset = (e: React.FormEvent) => {
     e.preventDefault();
@@ -106,8 +113,172 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
   // Hafalan Terbaru
   const recentHafalan = [...(data.progress || [])].reverse().slice(0, 5);
 
-  // Keuangan Terakhir
-  const recentKeuangan = [...(data.keuangan || [])].reverse().slice(0, 5);
+  // Analisa Keseluruhan Data Hadir: Sudah Bayar vs Belum Bayar
+  const { hadirSudahBayar, hadirBelumBayar } = useMemo(() => {
+    const normalizeText = (val: unknown) =>
+      String(val ?? '')
+        .trim()
+        .toLowerCase()
+        .replace(/\s+/g, ' ');
+
+    const normalizeNis = (val: unknown) => {
+      const s = String(val ?? '').trim().toLowerCase();
+      return s && s !== '-' ? s : '';
+    };
+
+    const normalizeDate = (val: unknown) => {
+      const raw = String(val ?? '').trim();
+      if (!raw || raw === '-') return '';
+      const isoMatch = raw.match(/^(\d{4}-\d{2}-\d{2})/);
+      if (isoMatch) return isoMatch[1];
+      const dmyMatch = raw.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})/);
+      if (dmyMatch) {
+        return `${dmyMatch[3]}-${dmyMatch[2].padStart(2, '0')}-${dmyMatch[1].padStart(2, '0')}`;
+      }
+      const parsed = new Date(raw);
+      if (!isNaN(parsed.getTime())) {
+        return parsed.toISOString().slice(0, 10);
+      }
+      return raw.toLowerCase();
+    };
+
+    const santriProgramByNis = new Map<string, string>();
+    const santriProgramByName = new Map<string, string>();
+    (data.santri || []).forEach((s) => {
+      const prog = String(s.program || '').trim();
+      if (!prog) return;
+      const nisKey = normalizeNis(s.nis);
+      const nameKey = normalizeText(s.nama);
+      if (nisKey) santriProgramByNis.set(nisKey, prog);
+      if (nameKey) santriProgramByName.set(nameKey, prog);
+    });
+
+    const keuanganRecords = (data.keuangan || []).map((k) => {
+      const statusLower = String(k.status || '').trim().toLowerCase();
+      const nominalVal = parseNominal(k.nominal || k.bayar || k.jumlah || 0);
+      const isPaid = statusLower !== 'belum lunas' && (statusLower === 'lunas' || nominalVal > 0);
+      return {
+        nisKey: normalizeNis(k.nis),
+        nameKey: normalizeText(k.nama),
+        dateKey: normalizeDate(k.tanggal),
+        jenis: String(k.jenis || k.kategori || 'Pembayaran').trim(),
+        nominal: nominalVal,
+        status: String(k.status || (isPaid ? 'Lunas' : 'Belum Lunas')).trim(),
+        isPaid,
+      };
+    });
+
+    interface AttendancePaymentRow {
+      id: string;
+      nama: string;
+      nis: string;
+      program: string;
+      tanggal: string;
+      dateSort: string;
+      jenis: string;
+      nominal: number;
+      statusLabel: string;
+      rowOrder: number;
+    }
+
+    const paidList: AttendancePaymentRow[] = [];
+    const unpaidList: AttendancePaymentRow[] = [];
+
+    (data.absensi || []).forEach((a, idx) => {
+      const st = String(a.status || '').trim().toUpperCase();
+      const isHadir = st === 'HADIR' || (st !== 'SAKIT' && st !== 'IZIN' && st !== 'ALPA');
+      if (!isHadir) return;
+
+      const aNis = normalizeNis(a.nis);
+      const aName = normalizeText(a.nama);
+      const aDate = normalizeDate(a.tanggal);
+      const resolvedProgram =
+        String(a.program || '').trim() ||
+        (aNis ? santriProgramByNis.get(aNis) : undefined) ||
+        (aName ? santriProgramByName.get(aName) : undefined) ||
+        '-';
+
+      const matchedBySantri = keuanganRecords.filter(
+        (k) => (aNis && k.nisKey && aNis === k.nisKey) || (aName && k.nameKey && aName === k.nameKey)
+      );
+
+      // Cocokkan transaksi pada tanggal hadir (atau catatan pembayaran tanpa tanggal)
+      const matchedForAttendance = matchedBySantri.filter(
+        (k) => !k.dateKey || !aDate || k.dateKey === aDate
+      );
+
+      const paidMatches = matchedForAttendance.filter((k) => k.isPaid);
+
+      if (paidMatches.length > 0) {
+        const totalNominal = paidMatches.reduce((sum, m) => sum + m.nominal, 0);
+        const jenisList = Array.from(new Set(paidMatches.map((m) => m.jenis).filter(Boolean))).join(', ');
+        paidList.push({
+          id: `paid-${a.row_index ?? idx}-${idx}`,
+          nama: String(a.nama || '-').trim(),
+          nis: String(a.nis || '-').trim(),
+          program: resolvedProgram,
+          tanggal: aDate || String(a.tanggal || '-').trim() || '-',
+          dateSort: aDate || '',
+          jenis: jenisList || 'Pembayaran',
+          nominal: totalNominal,
+          statusLabel: 'Sudah Bayar',
+          rowOrder: idx,
+        });
+      } else {
+        const unpaidMatch = matchedForAttendance.find((k) => !k.isPaid);
+        unpaidList.push({
+          id: `unpaid-${a.row_index ?? idx}-${idx}`,
+          nama: String(a.nama || '-').trim(),
+          nis: String(a.nis || '-').trim(),
+          program: resolvedProgram,
+          tanggal: aDate || String(a.tanggal || '-').trim() || '-',
+          dateSort: aDate || '',
+          jenis: unpaidMatch?.jenis || '-',
+          nominal: unpaidMatch?.nominal || 0,
+          statusLabel: unpaidMatch ? 'Belum Lunas' : 'Belum Bayar',
+          rowOrder: idx,
+        });
+      }
+    });
+
+    const sortNewestFirst = (x: AttendancePaymentRow, y: AttendancePaymentRow) => {
+      if (y.dateSort !== x.dateSort) return y.dateSort.localeCompare(x.dateSort);
+      return y.rowOrder - x.rowOrder;
+    };
+
+    paidList.sort(sortNewestFirst);
+    unpaidList.sort(sortNewestFirst);
+
+    return { hadirSudahBayar: paidList, hadirBelumBayar: unpaidList };
+  }, [data.absensi, data.keuangan, data.santri]);
+
+  const totalHadirPembayaran = hadirSudahBayar.length + hadirBelumBayar.length;
+  const pctSudahBayar =
+    totalHadirPembayaran === 0 ? 0 : Math.round((hadirSudahBayar.length / totalHadirPembayaran) * 100);
+  const pctBelumBayar = totalHadirPembayaran === 0 ? 0 : 100 - pctSudahBayar;
+
+  const normalizedSearchQuery = paymentSearch.trim().toLowerCase();
+  const filteredSudahBayar = useMemo(() => {
+    if (!normalizedSearchQuery) return hadirSudahBayar;
+    return hadirSudahBayar.filter(
+      (item) =>
+        item.nama.toLowerCase().includes(normalizedSearchQuery) ||
+        item.nis.toLowerCase().includes(normalizedSearchQuery) ||
+        item.tanggal.toLowerCase().includes(normalizedSearchQuery) ||
+        item.program.toLowerCase().includes(normalizedSearchQuery)
+    );
+  }, [hadirSudahBayar, normalizedSearchQuery]);
+
+  const filteredBelumBayar = useMemo(() => {
+    if (!normalizedSearchQuery) return hadirBelumBayar;
+    return hadirBelumBayar.filter(
+      (item) =>
+        item.nama.toLowerCase().includes(normalizedSearchQuery) ||
+        item.nis.toLowerCase().includes(normalizedSearchQuery) ||
+        item.tanggal.toLowerCase().includes(normalizedSearchQuery) ||
+        item.program.toLowerCase().includes(normalizedSearchQuery)
+    );
+  }, [hadirBelumBayar, normalizedSearchQuery]);
 
   return (
     <div className="p-4 space-y-4 pb-28 text-slate-100">
@@ -428,49 +599,160 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
         </button>
       </div>
 
-      {/* Keuangan Terakhir (Admin Only) */}
-      {isAdmin && (
-        <div className="bg-[#083834]/60 backdrop-blur-xl p-5 rounded-2xl border border-teal-500/25 shadow-lg relative overflow-hidden">
-          <h4 className="font-black text-white text-[11px] uppercase tracking-widest mb-4 flex items-center font-['Outfit']">
-            <Wallet className="text-emerald-400 mr-2 w-4 h-4" /> Pembayaran Terakhir
-          </h4>
-          <div className="space-y-2.5 mb-4">
-            {recentKeuangan.length === 0 ? (
-              <p className="text-[10px] italic text-teal-200/50">Belum ada data transaksi keuangan.</p>
+      {/* Grafik Pembayaran Terakhir (Keseluruhan Data Hadir: Sudah Bayar vs Belum Bayar) */}
+      {isAdmin && (() => {
+        const radius = 44;
+        const circumference = 2 * Math.PI * radius;
+        const paidDash =
+          totalHadirPembayaran > 0 ? (hadirSudahBayar.length / totalHadirPembayaran) * circumference : 0;
+        const unpaidDash =
+          totalHadirPembayaran > 0 ? (hadirBelumBayar.length / totalHadirPembayaran) * circumference : 0;
+
+        return (
+          <div className="bg-[#083834]/60 backdrop-blur-xl p-5 rounded-2xl border border-teal-500/25 shadow-lg relative overflow-hidden">
+            <div className="flex items-center justify-between mb-4">
+              <h4 className="font-black text-white text-[11px] uppercase tracking-widest flex items-center font-['Outfit']">
+                <Wallet className="text-emerald-400 mr-2 w-4 h-4" /> Pembayaran Terakhir
+              </h4>
+              <span className="text-[9.5px] font-bold text-teal-200/70 bg-[#042422] border border-teal-500/25 px-2.5 py-1 rounded-lg font-['Outfit']">
+                Total Hadir: {totalHadirPembayaran}
+              </span>
+            </div>
+
+            {totalHadirPembayaran === 0 ? (
+              <div className="py-6 text-center rounded-2xl bg-[#042422]/60 border border-teal-500/15 mb-4">
+                <p className="text-[11px] font-semibold text-teal-200/60">
+                  Belum ada data kehadiran santri untuk ditampilkan dalam grafik.
+                </p>
+              </div>
             ) : (
-              recentKeuangan.map((k, idx) => (
-                <div
-                  key={idx}
-                  className="flex justify-between items-center py-2 border-b border-teal-500/15 last:border-0"
-                >
-                  <div className="flex items-center min-w-0 pr-2">
-                    <div className="w-2 h-2 rounded-full bg-emerald-400 mr-2 shrink-0 shadow-xs shadow-emerald-400" />
-                    <div className="min-w-0">
-                      <h5 className="text-[10px] font-bold text-white uppercase tracking-tight truncate">
-                        {k.nama}
-                      </h5>
-                      <p className="text-[8px] text-teal-200/60 font-bold uppercase mt-0.5 truncate">
-                        {k.jenis || k.kategori || 'Pembayaran'}
+              <div className="space-y-4 mb-4">
+                <div className="flex items-center gap-4 bg-[#042422]/65 border border-teal-500/20 rounded-2xl p-4">
+                  {/* Donut Chart */}
+                  <div className="relative w-28 h-28 shrink-0 flex items-center justify-center">
+                    <svg viewBox="0 0 120 120" className="w-full h-full -rotate-90">
+                      <circle
+                        cx="60"
+                        cy="60"
+                        r={radius}
+                        fill="none"
+                        stroke="rgba(20, 184, 166, 0.14)"
+                        strokeWidth="12"
+                      />
+                      {unpaidDash > 0 && (
+                        <circle
+                          cx="60"
+                          cy="60"
+                          r={radius}
+                          fill="none"
+                          stroke="#fb7185"
+                          strokeWidth="12"
+                          strokeDasharray={`${unpaidDash} ${circumference}`}
+                          strokeDashoffset={-paidDash}
+                          strokeLinecap={paidDash === 0 ? 'round' : 'butt'}
+                        />
+                      )}
+                      {paidDash > 0 && (
+                        <circle
+                          cx="60"
+                          cy="60"
+                          r={radius}
+                          fill="none"
+                          stroke="#34d399"
+                          strokeWidth="12"
+                          strokeDasharray={`${paidDash} ${circumference}`}
+                          strokeDashoffset={0}
+                          strokeLinecap={unpaidDash === 0 ? 'round' : 'butt'}
+                        />
+                      )}
+                    </svg>
+                    <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
+                      <span className="text-xl font-black text-white leading-none font-['Outfit']">
+                        {totalHadirPembayaran}
+                      </span>
+                      <span className="text-[8.5px] font-extrabold uppercase tracking-wider text-teal-200/70 mt-1">
+                        Hadir
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Legend & Counts */}
+                  <div className="flex-1 min-w-0 space-y-2.5">
+                    <div className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/25">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 shrink-0 shadow-[0_0_8px_rgba(52,211,153,0.6)]" />
+                          <span className="text-[10px] font-extrabold text-emerald-200 uppercase tracking-tight truncate">
+                            Hadir • Sudah Bayar
+                          </span>
+                        </div>
+                        <span className="text-[10px] font-black text-emerald-300 font-['Outfit'] shrink-0">
+                          {pctSudahBayar}%
+                        </span>
+                      </div>
+                      <p className="text-lg font-black text-white mt-0.5 pl-4 font-['Outfit']">
+                        {hadirSudahBayar.length}{' '}
+                        <span className="text-[10px] font-semibold text-teal-200/70">data</span>
+                      </p>
+                    </div>
+
+                    <div className="p-2.5 rounded-xl bg-rose-500/10 border border-rose-500/25">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <span className="w-2.5 h-2.5 rounded-full bg-rose-400 shrink-0 shadow-[0_0_8px_rgba(251,113,133,0.6)]" />
+                          <span className="text-[10px] font-extrabold text-rose-200 uppercase tracking-tight truncate">
+                            Hadir • Belum Bayar
+                          </span>
+                        </div>
+                        <span className="text-[10px] font-black text-rose-300 font-['Outfit'] shrink-0">
+                          {pctBelumBayar}%
+                        </span>
+                      </div>
+                      <p className="text-lg font-black text-white mt-0.5 pl-4 font-['Outfit']">
+                        {hadirBelumBayar.length}{' '}
+                        <span className="text-[10px] font-semibold text-teal-200/70">data</span>
                       </p>
                     </div>
                   </div>
-                  <span className="text-[10px] font-black text-emerald-300 bg-emerald-500/20 border border-emerald-500/30 px-2 py-1 rounded-lg shrink-0 font-['Outfit']">
-                    Rp {parseNominal(k.nominal || k.bayar || k.jumlah || 0).toLocaleString('id-ID')}
-                  </span>
                 </div>
-              ))
+
+                {/* Stacked Proportional Bar */}
+                <div>
+                  <div className="w-full h-2.5 bg-teal-950/80 rounded-full overflow-hidden border border-teal-800/50 flex">
+                    {pctSudahBayar > 0 && (
+                      <div
+                        className="h-full bg-gradient-to-r from-emerald-500 to-emerald-400 transition-all duration-500"
+                        style={{ width: `${pctSudahBayar}%` }}
+                        title={`Hadir & Sudah Bayar: ${hadirSudahBayar.length} (${pctSudahBayar}%)`}
+                      />
+                    )}
+                    {pctBelumBayar > 0 && (
+                      <div
+                        className="h-full bg-gradient-to-r from-rose-500 to-rose-400 transition-all duration-500"
+                        style={{ width: `${pctBelumBayar}%` }}
+                        title={`Hadir & Belum Bayar: ${hadirBelumBayar.length} (${pctBelumBayar}%)`}
+                      />
+                    )}
+                  </div>
+                </div>
+              </div>
             )}
+
+            <button
+              type="button"
+              onClick={() => {
+                setPaymentFilterTab('semua');
+                setPaymentSearch('');
+                setIsPaymentDetailOpen(true);
+              }}
+              className="w-full py-2.5 bg-[#0a3a37]/80 hover:bg-emerald-500/20 border border-teal-500/30 text-emerald-300 hover:text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-center active:scale-98 font-['Outfit']"
+            >
+              <Eye className="w-3.5 h-3.5 mr-2" />
+              <span>Lihat</span>
+            </button>
           </div>
-          <button
-            type="button"
-            onClick={() => onOpenDataList('keuangan')}
-            className="w-full py-2.5 bg-[#0a3a37]/80 hover:bg-emerald-500/20 border border-teal-500/30 text-emerald-300 hover:text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-center active:scale-98 font-['Outfit']"
-          >
-            <span>Lihat Semua Data Keuangan</span>
-            <ArrowRight className="w-3.5 h-3.5 ml-2" />
-          </button>
-        </div>
-      )}
+        );
+      })()}
 
       {/* Modal Pengaturan Rekam Nominal Pembayaran (Keuangan Preset) */}
       {isPresetModalOpen && (
@@ -588,6 +870,255 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Detail Tabel Hadir & Status Pembayaran */}
+      {isPaymentDetailOpen && (
+        <div
+          className="fixed inset-0 bg-slate-950/75 backdrop-blur-md z-[9999] flex items-center justify-center p-3 sm:p-4"
+          onClick={() => setIsPaymentDetailOpen(false)}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="bg-[#073330] border border-teal-500/30 rounded-3xl p-4 sm:p-5 shadow-2xl max-w-2xl w-full max-h-[88vh] flex flex-col space-y-3.5 animate-in fade-in zoom-in-95 duration-200 font-['Plus_Jakarta_Sans',sans-serif] text-slate-100"
+          >
+            {/* Header */}
+            <div className="flex justify-between items-center pb-2.5 border-b border-teal-500/20 shrink-0">
+              <div className="flex items-center space-x-2.5">
+                <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 text-slate-950 flex items-center justify-center shrink-0 font-black shadow-md">
+                  <Wallet className="w-5 h-5 stroke-[2.5]" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-black text-white font-['Outfit']">
+                    Data Kehadiran &amp; Pembayaran
+                  </h3>
+                  <p className="text-[10px] text-teal-200/70 font-semibold">
+                    Santri hadir yang sudah bayar &amp; belum bayar
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsPaymentDetailOpen(false)}
+                className="p-1.5 text-teal-200/60 hover:text-white rounded-xl hover:bg-teal-900/40 transition-colors"
+                title="Tutup"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Filter Tabs & Search */}
+            <div className="space-y-2.5 shrink-0">
+              <div className="grid grid-cols-3 gap-1.5 bg-[#042422] p-1 rounded-xl border border-teal-500/25">
+                <button
+                  type="button"
+                  onClick={() => setPaymentFilterTab('semua')}
+                  className={`py-2 px-2 rounded-lg text-[10px] font-black uppercase tracking-tight transition-all font-['Outfit'] ${
+                    paymentFilterTab === 'semua'
+                      ? 'bg-teal-500/25 text-white border border-teal-400/40 shadow-sm'
+                      : 'text-teal-200/70 hover:text-white'
+                  }`}
+                >
+                  Semua ({totalHadirPembayaran})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPaymentFilterTab('sudah')}
+                  className={`py-2 px-2 rounded-lg text-[10px] font-black uppercase tracking-tight transition-all font-['Outfit'] ${
+                    paymentFilterTab === 'sudah'
+                      ? 'bg-emerald-500/25 text-emerald-200 border border-emerald-400/40 shadow-sm'
+                      : 'text-teal-200/70 hover:text-emerald-200'
+                  }`}
+                >
+                  Sudah Bayar ({hadirSudahBayar.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPaymentFilterTab('belum')}
+                  className={`py-2 px-2 rounded-lg text-[10px] font-black uppercase tracking-tight transition-all font-['Outfit'] ${
+                    paymentFilterTab === 'belum'
+                      ? 'bg-rose-500/25 text-rose-200 border border-rose-400/40 shadow-sm'
+                      : 'text-teal-200/70 hover:text-rose-200'
+                  }`}
+                >
+                  Belum Bayar ({hadirBelumBayar.length})
+                </button>
+              </div>
+
+              <div className="relative">
+                <Search className="w-3.5 h-3.5 text-teal-300/60 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                <input
+                  type="text"
+                  value={paymentSearch}
+                  onChange={(e) => setPaymentSearch(e.target.value)}
+                  placeholder="Cari nama santri, NIS, program, atau tanggal..."
+                  className="w-full pl-9 pr-3 py-2.5 bg-[#042422] border border-teal-500/30 rounded-xl text-xs font-semibold text-white placeholder:text-teal-200/40 outline-none focus:border-emerald-400"
+                />
+              </div>
+            </div>
+
+            {/* Tables Content */}
+            <div className="flex-1 overflow-y-auto space-y-4 pr-0.5">
+              {/* Tabel 1: Hadir & Sudah Bayar */}
+              {(paymentFilterTab === 'semua' || paymentFilterTab === 'sudah') && (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between px-1">
+                    <div className="flex items-center space-x-1.5">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                      <h4 className="text-[11px] font-black uppercase tracking-wider text-emerald-300 font-['Outfit']">
+                        Hadir &amp; Sudah Bayar
+                      </h4>
+                    </div>
+                    <span className="text-[10px] font-black text-emerald-300 bg-emerald-500/15 border border-emerald-500/30 px-2 py-0.5 rounded-md font-['Outfit']">
+                      {filteredSudahBayar.length} Data
+                    </span>
+                  </div>
+
+                  <div className="overflow-x-auto rounded-2xl border border-emerald-500/25 bg-[#042422]/85">
+                    <table className="w-full text-left border-collapse">
+                      <thead>
+                        <tr className="bg-[#052e2a] border-b border-teal-500/20 text-[9.5px] font-black uppercase tracking-wider text-teal-200/80 font-['Outfit']">
+                          <th className="py-2.5 px-3 w-10 text-center">No</th>
+                          <th className="py-2.5 px-3">Nama Santri</th>
+                          <th className="py-2.5 px-3 whitespace-nowrap">Tanggal</th>
+                          <th className="py-2.5 px-3 text-right whitespace-nowrap">Pembayaran</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-teal-500/15 text-xs">
+                        {filteredSudahBayar.length === 0 ? (
+                          <tr>
+                            <td colSpan={4} className="py-5 px-3 text-center text-[11px] text-teal-200/50 italic">
+                              Tidak ada data santri hadir yang sudah bayar.
+                            </td>
+                          </tr>
+                        ) : (
+                          filteredSudahBayar.map((item, idx) => (
+                            <tr key={item.id} className="hover:bg-emerald-500/10 transition-colors">
+                              <td className="py-2.5 px-3 text-center text-[10px] font-bold text-teal-200/70 align-top">
+                                {idx + 1}
+                              </td>
+                              <td className="py-2.5 px-3 align-top">
+                                <div className="font-bold text-white text-xs leading-snug">
+                                  {item.nama}
+                                </div>
+                                <div className="text-[9.5px] text-teal-200/65 font-medium mt-0.5">
+                                  NIS: {item.nis} {item.program !== '-' ? `• ${item.program}` : ''}
+                                </div>
+                              </td>
+                              <td className="py-2.5 px-3 text-[11px] font-semibold text-teal-100 whitespace-nowrap align-top">
+                                {item.tanggal}
+                              </td>
+                              <td className="py-2.5 px-3 text-right align-top whitespace-nowrap">
+                                <span className="inline-block text-[9.5px] font-black uppercase px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-['Outfit']">
+                                  Lunas
+                                </span>
+                                {item.nominal > 0 && (
+                                  <div className="text-[10.5px] font-black text-emerald-300 mt-1 font-['Outfit']">
+                                    Rp {item.nominal.toLocaleString('id-ID')}
+                                  </div>
+                                )}
+                              </td>
+                            </tr>
+                          ))
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+              {/* Tabel 2: Hadir & Belum Bayar */}
+              {(paymentFilterTab === 'semua' || paymentFilterTab === 'belum') && (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between px-1">
+                    <div className="flex items-center space-x-1.5">
+                      <AlertCircle className="w-4 h-4 text-rose-400" />
+                      <h4 className="text-[11px] font-black uppercase tracking-wider text-rose-300 font-['Outfit']">
+                        Hadir &amp; Belum Bayar
+                      </h4>
+                    </div>
+                    <span className="text-[10px] font-black text-rose-300 bg-rose-500/15 border border-rose-500/30 px-2 py-0.5 rounded-md font-['Outfit']">
+                      {filteredBelumBayar.length} Data
+                    </span>
+                  </div>
+
+                  <div className="overflow-x-auto rounded-2xl border border-rose-500/25 bg-[#042422]/85">
+                    <table className="w-full text-left border-collapse">
+                      <thead>
+                        <tr className="bg-[#052e2a] border-b border-teal-500/20 text-[9.5px] font-black uppercase tracking-wider text-teal-200/80 font-['Outfit']">
+                          <th className="py-2.5 px-3 w-10 text-center">No</th>
+                          <th className="py-2.5 px-3">Nama Santri</th>
+                          <th className="py-2.5 px-3 whitespace-nowrap">Tanggal</th>
+                          <th className="py-2.5 px-3 text-right whitespace-nowrap">Status</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-teal-500/15 text-xs">
+                        {filteredBelumBayar.length === 0 ? (
+                          <tr>
+                            <td colSpan={4} className="py-5 px-3 text-center text-[11px] text-teal-200/50 italic">
+                              Tidak ada data santri hadir yang belum bayar.
+                            </td>
+                          </tr>
+                        ) : (
+                          filteredBelumBayar.map((item, idx) => (
+                            <tr key={item.id} className="hover:bg-rose-500/10 transition-colors">
+                              <td className="py-2.5 px-3 text-center text-[10px] font-bold text-teal-200/70 align-top">
+                                {idx + 1}
+                              </td>
+                              <td className="py-2.5 px-3 align-top">
+                                <div className="font-bold text-white text-xs leading-snug">
+                                  {item.nama}
+                                </div>
+                                <div className="text-[9.5px] text-teal-200/65 font-medium mt-0.5">
+                                  NIS: {item.nis} {item.program !== '-' ? `• ${item.program}` : ''}
+                                </div>
+                              </td>
+                              <td className="py-2.5 px-3 text-[11px] font-semibold text-teal-100 whitespace-nowrap align-top">
+                                {item.tanggal}
+                              </td>
+                              <td className="py-2.5 px-3 text-right align-top whitespace-nowrap">
+                                <span className="inline-block text-[9.5px] font-black uppercase px-2 py-0.5 rounded-md bg-rose-500/20 text-rose-300 border border-rose-500/30 font-['Outfit']">
+                                  {item.statusLabel}
+                                </span>
+                                {item.nominal > 0 && (
+                                  <div className="text-[10px] font-bold text-rose-200/80 mt-1 font-['Outfit']">
+                                    Rp {item.nominal.toLocaleString('id-ID')}
+                                  </div>
+                                )}
+                              </td>
+                            </tr>
+                          ))
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="pt-2 border-t border-teal-500/20 flex items-center justify-between gap-2 shrink-0">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsPaymentDetailOpen(false);
+                  onOpenDataList('keuangan');
+                }}
+                className="px-3 py-2 bg-[#042422] hover:bg-teal-900/50 text-emerald-300 font-bold rounded-xl text-[11px] border border-teal-500/30 flex items-center space-x-1.5 transition-colors"
+              >
+                <span>Semua Data Keuangan</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsPaymentDetailOpen(false)}
+                className="px-4 py-2 bg-gradient-to-r from-emerald-400 to-teal-300 hover:from-emerald-300 hover:to-teal-200 text-slate-950 font-black rounded-xl text-xs shadow-md font-['Outfit']"
+              >
+                Tutup
+              </button>
+            </div>
           </div>
         </div>
       )}

@@ -144,25 +144,56 @@ export const ScanPageView: React.FC<ScanPageViewProps> = ({
   const scanLockRef = useRef(false);
   // Ref to prevent SpeechSynthesisUtterance from being garbage-collected mid-speech in Chrome/Safari
   const activeUtteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
+  const audioCtxRef = useRef<AudioContext | null>(null);
+  const speechDelayTimerRef = useRef<number | null>(null);
+  const speechSpeakTimerRef = useRef<number | null>(null);
+  const voicesRef = useRef<SpeechSynthesisVoice[]>([]);
 
-  // Pre-load and warm up browser speech synthesis voices on mount
+  // Pre-load and cache browser speech synthesis voices on mount
   useEffect(() => {
     if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
-      try {
-        window.speechSynthesis.getVoices();
-        const handleVoices = () => {
-          try {
-            window.speechSynthesis.getVoices();
-          } catch (_) {}
-        };
+      const refreshVoices = () => {
+        try {
+          const list = window.speechSynthesis.getVoices();
+          if (list && list.length > 0) {
+            voicesRef.current = list;
+          }
+        } catch (_) {}
+      };
+      refreshVoices();
+      const handleVoices = () => refreshVoices();
+      if (typeof window.speechSynthesis.addEventListener === 'function') {
+        window.speechSynthesis.addEventListener('voiceschanged', handleVoices);
+      } else {
         window.speechSynthesis.onvoiceschanged = handleVoices;
-        return () => {
-          if ('speechSynthesis' in window) {
+      }
+      return () => {
+        if ('speechSynthesis' in window) {
+          if (typeof window.speechSynthesis.removeEventListener === 'function') {
+            window.speechSynthesis.removeEventListener('voiceschanged', handleVoices);
+          } else {
             window.speechSynthesis.onvoiceschanged = null;
           }
-        };
-      } catch (_) {}
+        }
+      };
     }
+  }, []);
+
+  // Cleanup pending speech timers and AudioContext on unmount
+  useEffect(() => {
+    return () => {
+      if (speechDelayTimerRef.current !== null) {
+        window.clearTimeout(speechDelayTimerRef.current);
+      }
+      if (speechSpeakTimerRef.current !== null) {
+        window.clearTimeout(speechSpeakTimerRef.current);
+      }
+      try {
+        if (audioCtxRef.current && audioCtxRef.current.state !== 'closed') {
+          audioCtxRef.current.close().catch(() => {});
+        }
+      } catch (_) {}
+    };
   }, []);
 
   // Toggle Category Selection
@@ -176,90 +207,212 @@ export const ScanPageView: React.FC<ScanPageViewProps> = ({
     });
   };
 
-  // Play audio beep using Web Audio API
+  // Play crisp non-overlapping confirmation chime using a reusable Web Audio context
   const playBeepSound = () => {
     if (!soundEnabled) return;
     try {
       const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
       if (!AudioCtx) return;
-      const ctx = new AudioCtx();
+      if (!audioCtxRef.current || audioCtxRef.current.state === 'closed') {
+        audioCtxRef.current = new AudioCtx();
+      }
+      const ctx = audioCtxRef.current;
       if (ctx.state === 'suspended') {
         ctx.resume().catch(() => {});
       }
+
+      const now = ctx.currentTime;
+      // Short pleasant dual-tone chime (E5 -> A5, finishes cleanly in 150ms)
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
-
       osc.type = 'sine';
-      osc.frequency.setValueAtTime(880, ctx.currentTime);
-      gain.gain.setValueAtTime(0.2, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.18);
+      osc.frequency.setValueAtTime(659.25, now);
+      osc.frequency.setValueAtTime(880, now + 0.065);
+
+      gain.gain.setValueAtTime(0.001, now);
+      gain.gain.linearRampToValueAtTime(0.16, now + 0.015);
+      gain.gain.exponentialRampToValueAtTime(0.005, now + 0.15);
 
       osc.connect(gain);
       gain.connect(ctx.destination);
-      osc.start();
-      osc.stop(ctx.currentTime + 0.18);
+      osc.start(now);
+      osc.stop(now + 0.155);
     } catch (e) {}
   };
 
-  // Speak attendance announcement using Web Speech API: "[Nama Santri] sukses absensi"
-  const speakAttendanceAnnouncement = (namaSantri: string) => {
-    if (!soundEnabled) return;
+  // Score and select the most natural Indonesian voice available on the device
+  const pickBestIndonesianVoice = (voices: SpeechSynthesisVoice[]): SpeechSynthesisVoice | null => {
+    if (!voices || voices.length === 0) return null;
+
+    let bestVoice: SpeechSynthesisVoice | null = null;
+    let bestScore = -Infinity;
+
+    for (const v of voices) {
+      const lang = (v.lang || '').toLowerCase().replace('_', '-');
+      const name = (v.name || '').toLowerCase();
+      let score = 0;
+
+      const isIndonesian =
+        lang === 'id-id' ||
+        lang.startsWith('id-') ||
+        lang === 'id' ||
+        name.includes('indonesia') ||
+        name.includes('bahasa indonesia');
+
+      const isMalayFallback =
+        !isIndonesian && (lang === 'ms-my' || lang.startsWith('ms-') || lang === 'ms' || name.includes('malay'));
+
+      if (!isIndonesian && !isMalayFallback) {
+        continue;
+      }
+
+      if (isIndonesian) score += 100;
+      if (isMalayFallback) score += 25;
+
+      if (name.includes('google bahasa indonesia') || (name.includes('google') && isIndonesian)) {
+        score += 80;
+      }
+      if (name.includes('natural') || name.includes('online') || name.includes('neural')) {
+        score += 75;
+      }
+      if (name.includes('gadis') || name.includes('ardi') || name.includes('damayanti')) {
+        score += 60;
+      }
+      if (!v.localService) {
+        score += 15;
+      }
+      if (name.includes('espeak') || name.includes('mbrola') || name.includes('festival')) {
+        score -= 100;
+      }
+
+      if (score > bestScore) {
+        bestScore = score;
+        bestVoice = v;
+      }
+    }
+
+    return bestVoice;
+  };
+
+  // Normalize santri name so Indonesian TTS pronounces syllables cleanly (avoids spelling ALL-CAPS)
+  const formatNameForIndonesianSpeech = (rawName: string): string => {
+    const cleaned = (rawName || '')
+      .replace(/[\(\)\[\]"'`~^*]/g, ' ')
+      .replace(/[_/]+/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    if (!cleaned) return '';
+
+    const expanded = cleaned
+      .replace(/\bMoh\.?(?=\s|$)/gi, 'Muhammad')
+      .replace(/\bMuh\.?(?=\s|$)/gi, 'Muhammad')
+      .replace(/\bM\.?(?=\s+[A-Za-z])/gi, 'Muhammad')
+      .replace(/\bAbd\.?(?=\s|$)/gi, 'Abdul')
+      .replace(/\bHj\.?(?=\s|$)/gi, 'Hajjah')
+      .replace(/\bH\.?(?=\s+[A-Za-z])/gi, 'Haji')
+      .replace(/\.+/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    // Convert words to natural Title Case so uppercase names aren't spelled letter-by-letter
+    return expanded
+      .split(' ')
+      .filter(Boolean)
+      .map((word) => {
+        if (word.length <= 1) return word.toUpperCase();
+        return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+      })
+      .join(' ');
+  };
+
+  // Speak attendance announcement using Web Speech API with natural Indonesian cadence
+  const speakAttendanceAnnouncement = (namaSantri: string, forceSound = false) => {
+    if (!forceSound && !soundEnabled) return;
     try {
       if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
         console.warn('SpeechSynthesis not supported on this device/browser.');
         return;
       }
 
-      const cleanNama = (namaSantri || '').trim();
-      if (!cleanNama) return;
+      const spokenName = formatNameForIndonesianSpeech(namaSantri);
+      if (!spokenName) return;
 
-      const textToSpeak = `${cleanNama} sukses absensi`;
-      const utterance = new SpeechSynthesisUtterance(textToSpeak);
-
-      utterance.lang = 'id-ID';
-      utterance.rate = 1.0;
-      utterance.pitch = 1.0;
-      utterance.volume = 1.0;
-
-      // Select Indonesian voice if available
-      const voices = window.speechSynthesis.getVoices();
-      const indonesianVoice = voices.find(
-        (v) =>
-          v.lang.toLowerCase().startsWith('id') ||
-          v.lang.toLowerCase().includes('id-id') ||
-          v.name.toLowerCase().includes('indonesia')
-      );
-      if (indonesianVoice) {
-        utterance.voice = indonesianVoice;
+      if (speechSpeakTimerRef.current !== null) {
+        window.clearTimeout(speechSpeakTimerRef.current);
+        speechSpeakTimerRef.current = null;
       }
 
-      utterance.onend = () => {
-        activeUtteranceRef.current = null;
-      };
+      const runSpeak = () => {
+        const latestVoices = window.speechSynthesis.getVoices();
+        const availableVoices =
+          latestVoices && latestVoices.length > 0 ? latestVoices : voicesRef.current;
+        if (latestVoices && latestVoices.length > 0) {
+          voicesRef.current = latestVoices;
+        }
 
-      utterance.onerror = (e) => {
-        console.warn('Speech synthesis event:', e);
-        activeUtteranceRef.current = null;
-      };
+        const chosenVoice = pickBestIndonesianVoice(availableVoices);
+        const textToSpeak = `${spokenName}, sukses absensi.`;
+        const utterance = new SpeechSynthesisUtterance(textToSpeak);
 
-      // Keep reference to prevent GC bug in Chromium/Safari
-      activeUtteranceRef.current = utterance;
+        utterance.lang = chosenVoice?.lang || 'id-ID';
+        if (chosenVoice) {
+          utterance.voice = chosenVoice;
+        }
+        // Slightly slower, clear Indonesian articulation with natural pitch
+        utterance.rate = 0.88;
+        utterance.pitch = 1.02;
+        utterance.volume = 1.0;
 
-      // Unpause speech engine if paused by browser
-      try {
-        window.speechSynthesis.cancel();
-      } catch (_) {}
+        utterance.onend = () => {
+          activeUtteranceRef.current = null;
+        };
 
-      setTimeout(() => {
+        utterance.onerror = (e) => {
+          console.warn('Speech synthesis event:', e);
+          activeUtteranceRef.current = null;
+        };
+
+        // Keep reference to prevent GC bug in Chromium/Safari
+        activeUtteranceRef.current = utterance;
+
         try {
-          window.speechSynthesis.resume();
+          if (window.speechSynthesis.paused) {
+            window.speechSynthesis.resume();
+          }
           window.speechSynthesis.speak(utterance);
         } catch (err) {
           console.warn('Error during speak execution:', err);
         }
-      }, 60);
+      };
+
+      const isBusy = window.speechSynthesis.speaking || window.speechSynthesis.pending;
+      if (isBusy) {
+        try {
+          window.speechSynthesis.cancel();
+        } catch (_) {}
+        // Allow Chromium speech queue to flush cleanly after cancel so first syllables never clip
+        speechSpeakTimerRef.current = window.setTimeout(runSpeak, 120);
+      } else {
+        runSpeak();
+      }
     } catch (e) {
       console.warn('Speech synthesis error:', e);
+    }
+  };
+
+  // Coordinated beep + delayed Indonesian speech (260ms avoids overlap with 150ms chime)
+  const triggerAttendanceAudio = (namaSantri?: string) => {
+    if (!soundEnabled) return;
+    if (speechDelayTimerRef.current !== null) {
+      window.clearTimeout(speechDelayTimerRef.current);
+      speechDelayTimerRef.current = null;
+    }
+    playBeepSound();
+    if (namaSantri && namaSantri.trim()) {
+      speechDelayTimerRef.current = window.setTimeout(() => {
+        speakAttendanceAnnouncement(namaSantri);
+      }, 260);
     }
   };
 
@@ -308,13 +461,12 @@ export const ScanPageView: React.FC<ScanPageViewProps> = ({
     const shouldDoAbsensi = selectedCategories.includes('absensi');
     const shouldDoKeuangan = selectedCategories.includes('keuangan');
 
-    // Bunyikan suara: jika opsi absensi aktif, sebutkan nama santri ("Fatih telah melakukan absen").
-    // Jika absensi TIDAK dipilih, hanya bunyi notifikasi beep biasa.
-    playBeepSound();
+    // Bunyikan suara: jika opsi absensi aktif, sebutkan nama santri dengan jeda bersih setelah chime.
+    // Jika absensi TIDAK dipilih, hanya bunyi notifikasi chime biasa.
     if (shouldDoAbsensi) {
-      setTimeout(() => {
-        speakAttendanceAnnouncement(santri.nama);
-      }, 160);
+      triggerAttendanceAudio(santri.nama);
+    } else {
+      playBeepSound();
     }
 
     setScannedSantri(santri);
@@ -776,10 +928,36 @@ export const ScanPageView: React.FC<ScanPageViewProps> = ({
               type="button"
               onClick={() => {
                 if (!soundEnabled) setSoundEnabled(true);
-                playBeepSound();
-                setTimeout(() => {
-                  speakAttendanceAnnouncement('Fatih');
-                }, 160);
+                if (speechDelayTimerRef.current !== null) {
+                  window.clearTimeout(speechDelayTimerRef.current);
+                }
+                // Force play even if soundEnabled was just toggled on in this render
+                try {
+                  const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+                  if (AudioCtx) {
+                    if (!audioCtxRef.current || audioCtxRef.current.state === 'closed') {
+                      audioCtxRef.current = new AudioCtx();
+                    }
+                    const ctx = audioCtxRef.current;
+                    if (ctx.state === 'suspended') ctx.resume().catch(() => {});
+                    const now = ctx.currentTime;
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(659.25, now);
+                    osc.frequency.setValueAtTime(880, now + 0.065);
+                    gain.gain.setValueAtTime(0.001, now);
+                    gain.gain.linearRampToValueAtTime(0.16, now + 0.015);
+                    gain.gain.exponentialRampToValueAtTime(0.005, now + 0.15);
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    osc.start(now);
+                    osc.stop(now + 0.155);
+                  }
+                } catch (_) {}
+                speechDelayTimerRef.current = window.setTimeout(() => {
+                  speakAttendanceAnnouncement('Fatih', true);
+                }, 260);
               }}
               className="px-2.5 py-1 bg-[#042422] hover:bg-teal-900/50 text-teal-200 hover:text-emerald-300 rounded-xl border border-teal-500/30 text-[10px] font-black flex items-center space-x-1 transition-all active:scale-95 font-['Outfit']"
               title="Uji coba suara absensi santri (Contoh: Fatih sukses absensi)"
