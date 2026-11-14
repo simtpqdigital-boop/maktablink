@@ -7,9 +7,12 @@ import {
   CalendarCheck,
   Check,
   CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
   CreditCard,
   Edit3,
   Eye,
+  EyeOff,
   GraduationCap,
   Heart,
   Info,
@@ -31,12 +34,76 @@ interface AdminDashboardViewProps {
   onSubmitQuickAttendance: (records: Array<{ nama: string; nis: string; status: string }>) => void;
 }
 
+const SHORT_DAYS_ID = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
+const FULL_DAYS_ID = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+const SHORT_MONTHS_ID = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+
+const getLocalDateStr = (d: Date = new Date()): string => {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+};
+
+const shiftDateStr = (dateStr: string, deltaDays: number): string => {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  const dt = new Date(y, (m || 1) - 1, (d || 1) + deltaDays);
+  return getLocalDateStr(dt);
+};
+
+const normalizeDateKey = (val: unknown): string => {
+  const raw = String(val ?? '').trim();
+  if (!raw || raw === '-') return '';
+  if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return raw;
+  const dmyMatch = raw.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})/);
+  if (dmyMatch) {
+    return `${dmyMatch[3]}-${dmyMatch[2].padStart(2, '0')}-${dmyMatch[1].padStart(2, '0')}`;
+  }
+  if (raw.includes('T')) {
+    const parsed = new Date(raw);
+    if (!isNaN(parsed.getTime())) {
+      return getLocalDateStr(parsed);
+    }
+  }
+  const isoPrefix = raw.match(/^(\d{4}-\d{2}-\d{2})/);
+  if (isoPrefix) return isoPrefix[1];
+  const parsed = new Date(raw);
+  if (!isNaN(parsed.getTime())) {
+    return getLocalDateStr(parsed);
+  }
+  return raw.toLowerCase();
+};
+
+const formatDateObj = (dateStr: string, todayStr: string) => {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  const dt = new Date(y, (m || 1) - 1, d || 1);
+  return {
+    dateStr,
+    shortDay: SHORT_DAYS_ID[dt.getDay()],
+    fullDay: FULL_DAYS_ID[dt.getDay()],
+    dayNum: d,
+    shortLabel: `${SHORT_DAYS_ID[dt.getDay()]}, ${d} ${SHORT_MONTHS_ID[(m || 1) - 1]}`,
+    fullLabel: `${FULL_DAYS_ID[dt.getDay()]}, ${d} ${SHORT_MONTHS_ID[(m || 1) - 1]} ${y}`,
+    isToday: dateStr === todayStr,
+  };
+};
+
+const buildWeekDays = (todayStr: string, weekOffset: number) => {
+  const endDateStr = shiftDateStr(todayStr, weekOffset * 7);
+  return Array.from({ length: 7 }, (_, i) => {
+    const dateStr = shiftDateStr(endDateStr, i - 6);
+    return formatDateObj(dateStr, todayStr);
+  });
+};
+
 export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
   data,
   userRole,
   onOpenDataList,
   onSubmitQuickAttendance,
 }) => {
+  const todayStr = getLocalDateStr();
+
   const [quickStatusMap, setQuickStatusMap] = useState<Record<string, string>>({});
   const [keuanganPreset, setLocalKeuanganPreset] = useState<KeuanganPreset>(getKeuanganPreset());
   const [isPresetModalOpen, setIsPresetModalOpen] = useState(false);
@@ -45,6 +112,17 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
   const [isPaymentDetailOpen, setIsPaymentDetailOpen] = useState(false);
   const [paymentFilterTab, setPaymentFilterTab] = useState<'semua' | 'sudah' | 'belum'>('semua');
   const [paymentSearch, setPaymentSearch] = useState('');
+
+  // State harian & sepekan untuk masing-masing kartu di Home
+  const [showTotalKeuangan, setShowTotalKeuangan] = useState(false);
+  const [financeWeekOffset, setFinanceWeekOffset] = useState(0);
+  const [financeSelectedDate, setFinanceSelectedDate] = useState(todayStr);
+
+  const [attendanceWeekOffset, setAttendanceWeekOffset] = useState(0);
+  const [attendanceSelectedDate, setAttendanceSelectedDate] = useState(todayStr);
+
+  const [paymentWeekOffset, setPaymentWeekOffset] = useState(0);
+  const [paymentSelectedDate, setPaymentSelectedDate] = useState(todayStr);
 
   const handleSavePreset = (e: React.FormEvent) => {
     e.preventDefault();
@@ -68,10 +146,41 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
     return isNaN(num) ? 0 : num;
   };
 
-  // Keuangan Total Calculation
-  const totalNominalKeuangan = (data.keuangan || []).reduce((acc, curr) => {
-    return acc + parseNominal(curr.nominal || curr.bayar || curr.jumlah || 0);
-  }, 0);
+  // Keuangan Total Calculation (Keseluruhan) + Map Harian Sepekan
+  const totalNominalKeuangan = useMemo(() => {
+    return (data.keuangan || []).reduce((acc, curr) => {
+      return acc + parseNominal(curr.nominal || curr.bayar || curr.jumlah || 0);
+    }, 0);
+  }, [data.keuangan]);
+
+  const keuanganByDateMap = useMemo(() => {
+    const map = new Map<string, { nominal: number; count: number }>();
+    (data.keuangan || []).forEach((k) => {
+      const dKey = normalizeDateKey(k.tanggal);
+      if (!dKey) return;
+      const nom = parseNominal(k.nominal || k.bayar || k.jumlah || 0);
+      const existing = map.get(dKey) || { nominal: 0, count: 0 };
+      map.set(dKey, {
+        nominal: existing.nominal + nom,
+        count: existing.count + 1,
+      });
+    });
+    return map;
+  }, [data.keuangan]);
+
+  const financeWeekDays = useMemo(() => {
+    return buildWeekDays(todayStr, financeWeekOffset).map((d) => {
+      const stat = keuanganByDateMap.get(d.dateStr) || { nominal: 0, count: 0 };
+      return { ...d, ...stat };
+    });
+  }, [todayStr, financeWeekOffset, keuanganByDateMap]);
+
+  const maxFinanceTxWeek = Math.max(1, ...financeWeekDays.map((d) => d.count));
+  const selectedFinanceStat = keuanganByDateMap.get(financeSelectedDate) || { nominal: 0, count: 0 };
+  const selectedFinanceDayInfo = useMemo(
+    () => formatDateObj(financeSelectedDate, todayStr),
+    [financeSelectedDate, todayStr]
+  );
 
   const handleQuickSelect = (nama: string, status: string) => {
     setQuickStatusMap((prev) => ({
@@ -93,28 +202,51 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
     setQuickStatusMap({});
   };
 
-  // Kehadiran Stats
+  // Kehadiran Stats Harian & Grafik Sepekan
   const absensiList = data.absensi || [];
-  let hadirCount = 0;
-  let sakitIzinCount = 0;
-  let alpaCount = 0;
-  const totalAbsensi = absensiList.length || 1;
+  const attendanceByDateMap = useMemo(() => {
+    const map = new Map<string, { hadir: number; sakitIzin: number; alpa: number; total: number }>();
+    absensiList.forEach((a) => {
+      const dKey = normalizeDateKey(a.tanggal);
+      if (!dKey) return;
+      const cur = map.get(dKey) || { hadir: 0, sakitIzin: 0, alpa: 0, total: 0 };
+      const st = String(a.status || '').trim().toUpperCase();
+      if (st === 'SAKIT' || st === 'IZIN') cur.sakitIzin++;
+      else if (st === 'ALPA') cur.alpa++;
+      else cur.hadir++;
+      cur.total++;
+      map.set(dKey, cur);
+    });
+    return map;
+  }, [absensiList]);
 
-  absensiList.forEach((a) => {
-    const st = (a.status || '').toUpperCase();
-    if (st === 'HADIR') hadirCount++;
-    else if (st === 'SAKIT' || st === 'IZIN') sakitIzinCount++;
-    else if (st === 'ALPA') alpaCount++;
-    else hadirCount++;
-  });
+  const attendanceWeekDays = useMemo(() => {
+    return buildWeekDays(todayStr, attendanceWeekOffset).map((d) => {
+      const stat = attendanceByDateMap.get(d.dateStr) || { hadir: 0, sakitIzin: 0, alpa: 0, total: 0 };
+      return { ...d, ...stat };
+    });
+  }, [todayStr, attendanceWeekOffset, attendanceByDateMap]);
 
-  const getPct = (val: number) => (absensiList.length === 0 ? 0 : Math.round((val / totalAbsensi) * 100));
+  const maxAttendanceWeek = Math.max(1, ...attendanceWeekDays.map((d) => d.total));
+  const selectedAttendanceStat = attendanceByDateMap.get(attendanceSelectedDate) || {
+    hadir: 0,
+    sakitIzin: 0,
+    alpa: 0,
+    total: 0,
+  };
+  const selectedAttendanceDayInfo = useMemo(
+    () => formatDateObj(attendanceSelectedDate, todayStr),
+    [attendanceSelectedDate, todayStr]
+  );
+
+  const getAttendancePct = (val: number) =>
+    selectedAttendanceStat.total === 0 ? 0 : Math.round((val / selectedAttendanceStat.total) * 100);
 
   // Hafalan Terbaru
   const recentHafalan = [...(data.progress || [])].reverse().slice(0, 5);
 
-  // Analisa Keseluruhan Data Hadir: Sudah Bayar vs Belum Bayar
-  const { hadirSudahBayar, hadirBelumBayar } = useMemo(() => {
+  // Analisa Keseluruhan Data Hadir (Sudah Bayar vs Belum Bayar) dikelompokkan per tanggal
+  const { allPaidRows, allUnpaidRows, paymentStatsByDate } = useMemo(() => {
     const normalizeText = (val: unknown) =>
       String(val ?? '')
         .trim()
@@ -124,22 +256,6 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
     const normalizeNis = (val: unknown) => {
       const s = String(val ?? '').trim().toLowerCase();
       return s && s !== '-' ? s : '';
-    };
-
-    const normalizeDate = (val: unknown) => {
-      const raw = String(val ?? '').trim();
-      if (!raw || raw === '-') return '';
-      const isoMatch = raw.match(/^(\d{4}-\d{2}-\d{2})/);
-      if (isoMatch) return isoMatch[1];
-      const dmyMatch = raw.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})/);
-      if (dmyMatch) {
-        return `${dmyMatch[3]}-${dmyMatch[2].padStart(2, '0')}-${dmyMatch[1].padStart(2, '0')}`;
-      }
-      const parsed = new Date(raw);
-      if (!isNaN(parsed.getTime())) {
-        return parsed.toISOString().slice(0, 10);
-      }
-      return raw.toLowerCase();
     };
 
     const santriProgramByNis = new Map<string, string>();
@@ -160,7 +276,7 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
       return {
         nisKey: normalizeNis(k.nis),
         nameKey: normalizeText(k.nama),
-        dateKey: normalizeDate(k.tanggal),
+        dateKey: normalizeDateKey(k.tanggal),
         jenis: String(k.jenis || k.kategori || 'Pembayaran').trim(),
         nominal: nominalVal,
         status: String(k.status || (isPaid ? 'Lunas' : 'Belum Lunas')).trim(),
@@ -183,6 +299,7 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
 
     const paidList: AttendancePaymentRow[] = [];
     const unpaidList: AttendancePaymentRow[] = [];
+    const dateCounts = new Map<string, { paid: number; unpaid: number; total: number }>();
 
     (data.absensi || []).forEach((a, idx) => {
       const st = String(a.status || '').trim().toUpperCase();
@@ -191,7 +308,7 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
 
       const aNis = normalizeNis(a.nis);
       const aName = normalizeText(a.nama);
-      const aDate = normalizeDate(a.tanggal);
+      const aDate = normalizeDateKey(a.tanggal);
       const resolvedProgram =
         String(a.program || '').trim() ||
         (aNis ? santriProgramByNis.get(aNis) : undefined) ||
@@ -202,12 +319,12 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
         (k) => (aNis && k.nisKey && aNis === k.nisKey) || (aName && k.nameKey && aName === k.nameKey)
       );
 
-      // Cocokkan transaksi pada tanggal hadir (atau catatan pembayaran tanpa tanggal)
       const matchedForAttendance = matchedBySantri.filter(
         (k) => !k.dateKey || !aDate || k.dateKey === aDate
       );
 
       const paidMatches = matchedForAttendance.filter((k) => k.isPaid);
+      const curDayCount = aDate ? dateCounts.get(aDate) || { paid: 0, unpaid: 0, total: 0 } : null;
 
       if (paidMatches.length > 0) {
         const totalNominal = paidMatches.reduce((sum, m) => sum + m.nominal, 0);
@@ -224,6 +341,11 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
           statusLabel: 'Sudah Bayar',
           rowOrder: idx,
         });
+        if (curDayCount && aDate) {
+          curDayCount.paid++;
+          curDayCount.total++;
+          dateCounts.set(aDate, curDayCount);
+        }
       } else {
         const unpaidMatch = matchedForAttendance.find((k) => !k.isPaid);
         unpaidList.push({
@@ -238,6 +360,11 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
           statusLabel: unpaidMatch ? 'Belum Lunas' : 'Belum Bayar',
           rowOrder: idx,
         });
+        if (curDayCount && aDate) {
+          curDayCount.unpaid++;
+          curDayCount.total++;
+          dateCounts.set(aDate, curDayCount);
+        }
       }
     });
 
@@ -249,8 +376,31 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
     paidList.sort(sortNewestFirst);
     unpaidList.sort(sortNewestFirst);
 
-    return { hadirSudahBayar: paidList, hadirBelumBayar: unpaidList };
+    return { allPaidRows: paidList, allUnpaidRows: unpaidList, paymentStatsByDate: dateCounts };
   }, [data.absensi, data.keuangan, data.santri]);
+
+  const paymentWeekDays = useMemo(() => {
+    return buildWeekDays(todayStr, paymentWeekOffset).map((d) => {
+      const stat = paymentStatsByDate.get(d.dateStr) || { paid: 0, unpaid: 0, total: 0 };
+      return { ...d, ...stat };
+    });
+  }, [todayStr, paymentWeekOffset, paymentStatsByDate]);
+
+  const maxPaymentWeek = Math.max(1, ...paymentWeekDays.map((d) => d.total));
+  const selectedPaymentDayInfo = useMemo(
+    () => formatDateObj(paymentSelectedDate, todayStr),
+    [paymentSelectedDate, todayStr]
+  );
+
+  const hadirSudahBayar = useMemo(
+    () => allPaidRows.filter((item) => item.dateSort === paymentSelectedDate),
+    [allPaidRows, paymentSelectedDate]
+  );
+
+  const hadirBelumBayar = useMemo(
+    () => allUnpaidRows.filter((item) => item.dateSort === paymentSelectedDate),
+    [allUnpaidRows, paymentSelectedDate]
+  );
 
   const totalHadirPembayaran = hadirSudahBayar.length + hadirBelumBayar.length;
   const pctSudahBayar =
@@ -362,33 +512,165 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
         </div>
       </div>
 
-      {/* Kotak Laporan Keuangan (Admin Only) */}
+      {/* Kotak Laporan Keuangan & Transparansi (Admin Only) */}
       {isAdmin && (
         <div
           onClick={() => onOpenDataList('keuangan')}
-          className="bg-gradient-to-r from-[#0a3834]/90 to-[#062c29]/90 border border-teal-500/30 hover:border-emerald-400/50 p-4 rounded-2xl shadow-lg transition-all cursor-pointer group active:scale-[0.98] relative overflow-hidden backdrop-blur-xl"
+          className="bg-gradient-to-r from-[#0a3834]/90 to-[#062c29]/90 border border-teal-500/30 hover:border-emerald-400/50 p-4 rounded-2xl shadow-lg transition-all cursor-pointer group relative overflow-hidden backdrop-blur-xl space-y-3"
         >
-          <div className="flex justify-between items-start mb-2">
-            <div>
+          <div className="flex justify-between items-start gap-3">
+            <div className="min-w-0 flex-1">
               <div className="flex items-center space-x-1.5">
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                <span className="text-[10px] font-black text-emerald-300 uppercase tracking-widest font-['Outfit']">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 shrink-0" />
+                <span className="text-[10px] font-black text-emerald-300 uppercase tracking-widest font-['Outfit'] truncate">
                   Laporan Keuangan &amp; Transparansi
                 </span>
               </div>
-              <h4 className="text-lg font-black text-white mt-0.5 font-['Outfit']">
-                Rp {totalNominalKeuangan.toLocaleString('id-ID')}
-              </h4>
+
+              {/* Tingkat 1 (Atas - Angka Besar): Pemasukan Harian Sesuai Hari Terpilih */}
+              <div className="mt-1.5">
+                <p className="text-[10px] font-semibold text-teal-200/75">
+                  Masuk {selectedFinanceDayInfo.isToday ? 'Hari Ini' : selectedFinanceDayInfo.shortLabel} ·{' '}
+                  <span className="tabular-nums">{selectedFinanceStat.count}</span> transaksi
+                </p>
+                <h4 className="text-2xl sm:text-[26px] font-black text-white mt-0.5 font-['Outfit'] tabular-nums tracking-tight leading-tight">
+                  Rp {selectedFinanceStat.nominal.toLocaleString('id-ID')}
+                </h4>
+              </div>
+
+              {/* Tingkat 2 (Bawah - Titik Panjang + Ikon Mata untuk Total Keseluruhan) */}
+              <div
+                className="flex items-center gap-2 mt-1.5"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <span className="text-xs font-bold text-teal-200/80 tabular-nums tracking-wider select-none">
+                  {showTotalKeuangan
+                    ? `Total Keseluruhan: Rp ${totalNominalKeuangan.toLocaleString('id-ID')}`
+                    : '••••••••••••••••••••'}
+                </span>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowTotalKeuangan((prev) => !prev);
+                  }}
+                  className="p-1.5 rounded-lg bg-[#042422]/85 hover:bg-teal-800/70 border border-teal-500/30 text-emerald-300 hover:text-white transition-colors shrink-0"
+                  title={showTotalKeuangan ? 'Sembunyikan total keseluruhan' : 'Lihat total keseluruhan uang'}
+                  aria-label={showTotalKeuangan ? 'Sembunyikan total keseluruhan' : 'Lihat total keseluruhan uang'}
+                >
+                  {showTotalKeuangan ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                </button>
+              </div>
             </div>
-            <div className="bg-gradient-to-br from-emerald-400 to-teal-500 text-slate-950 p-2 rounded-xl group-hover:scale-110 transition-transform shadow-md shadow-emerald-500/20 font-black">
+
+            <div className="bg-gradient-to-br from-emerald-400 to-teal-500 text-slate-950 p-2 rounded-xl group-hover:scale-105 transition-transform shadow-md shadow-emerald-500/20 font-black shrink-0">
               <Wallet className="w-4 h-4 stroke-[2.5]" />
+            </div>
+          </div>
+
+          {/* Grafik Harian Sepekan (Jumlah Transaksi Saja) */}
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="bg-[#042422]/70 border border-teal-500/20 rounded-xl p-3 space-y-2 cursor-default"
+          >
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-[10px] font-bold text-teal-200/80 font-['Outfit']">
+                Grafik Transaksi Sepekan
+              </span>
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const nextOffset = financeWeekOffset - 1;
+                    setFinanceWeekOffset(nextOffset);
+                    const nextDays = buildWeekDays(todayStr, nextOffset);
+                    setFinanceSelectedDate(nextDays[6].dateStr);
+                  }}
+                  className="p-1 rounded-lg bg-[#073330] hover:bg-teal-800/70 border border-teal-500/25 text-teal-200 transition-colors"
+                  title="Pekan sebelumnya"
+                >
+                  <ChevronLeft className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  type="button"
+                  disabled={financeWeekOffset >= 0}
+                  onClick={() => {
+                    const nextOffset = Math.min(0, financeWeekOffset + 1);
+                    setFinanceWeekOffset(nextOffset);
+                    const nextDays = buildWeekDays(todayStr, nextOffset);
+                    setFinanceSelectedDate(nextOffset === 0 ? todayStr : nextDays[6].dateStr);
+                  }}
+                  className="p-1 rounded-lg bg-[#073330] hover:bg-teal-800/70 disabled:opacity-35 disabled:pointer-events-none border border-teal-500/25 text-teal-200 transition-colors"
+                  title="Pekan berikutnya"
+                >
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-7 gap-1.5 items-end pt-1">
+              {financeWeekDays.map((day) => {
+                const isSelected = day.dateStr === financeSelectedDate;
+                const heightPct = day.count === 0 ? 0 : Math.max(18, Math.round((day.count / maxFinanceTxWeek) * 100));
+                return (
+                  <button
+                    key={day.dateStr}
+                    type="button"
+                    onClick={() => setFinanceSelectedDate(day.dateStr)}
+                    className={`flex flex-col items-center rounded-xl py-1.5 px-1 transition-all border ${
+                      isSelected
+                        ? 'bg-emerald-500/20 border-emerald-400/50 shadow-sm'
+                        : 'bg-transparent border-transparent hover:bg-teal-900/40'
+                    }`}
+                    title={`${day.fullLabel}: ${day.count} transaksi`}
+                  >
+                    <span
+                      className={`text-[10px] font-black tabular-nums mb-1 font-['Outfit'] ${
+                        isSelected
+                          ? 'text-emerald-300'
+                          : day.count > 0
+                            ? 'text-white'
+                            : 'text-teal-200/40'
+                      }`}
+                    >
+                      {day.count}
+                    </span>
+                    <div className="w-full max-w-[20px] h-12 bg-teal-950/80 rounded-md overflow-hidden flex items-end border border-teal-800/40">
+                      <div
+                        className={`w-full rounded-t-sm transition-all duration-300 ${
+                          isSelected
+                            ? 'bg-gradient-to-t from-emerald-500 to-emerald-300'
+                            : day.count > 0
+                              ? 'bg-emerald-500/55'
+                              : 'bg-transparent'
+                        }`}
+                        style={{ height: `${heightPct}%` }}
+                      />
+                    </div>
+                    <span
+                      className={`text-[9px] font-extrabold mt-1 leading-none whitespace-nowrap ${
+                        isSelected ? 'text-emerald-300' : 'text-teal-200/75'
+                      }`}
+                    >
+                      {day.shortDay}
+                    </span>
+                    <span
+                      className={`text-[8px] tabular-nums mt-0.5 leading-none ${
+                        isSelected ? 'text-white font-bold' : 'text-teal-200/50'
+                      }`}
+                    >
+                      {day.dayNum}
+                    </span>
+                  </button>
+                );
+              })}
             </div>
           </div>
 
           <div className="flex items-center justify-between text-[10px] font-bold text-teal-200/80 pt-2 border-t border-teal-500/20">
             <div className="flex items-center space-x-1.5">
               <BarChart3 className="w-3.5 h-3.5 text-emerald-400" />
-              <span>{data.keuangan?.length || 0} Record Transaksi</span>
+              <span className="tabular-nums">{data.keuangan?.length || 0} Total Record Transaksi</span>
             </div>
             <span className="text-emerald-300 font-extrabold group-hover:underline flex items-center space-x-0.5">
               <span>Lihat Keuangan</span>
@@ -497,61 +779,167 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
         </div>
       </div>
 
-      {/* Grafik Kehadiran */}
-      <div className="bg-[#083834]/60 backdrop-blur-xl p-5 rounded-2xl border border-teal-500/25 shadow-lg">
-        <h4 className="font-black text-white text-[11px] uppercase tracking-widest mb-4 flex items-center font-['Outfit']">
-          <BarChart3 className="text-emerald-400 mr-2 w-4 h-4" /> Rekap Kehadiran
-        </h4>
-        {absensiList.length === 0 ? (
-          <p className="text-[10px] italic text-teal-200/50">Belum ada data absensi.</p>
-        ) : (
-          <div className="space-y-3">
-            <div>
-              <div className="flex justify-between text-[10px] font-bold text-teal-200/80 mb-1">
-                <span className="uppercase">Hadir</span>
-                <span>
-                  {hadirCount} ({getPct(hadirCount)}%)
-                </span>
-              </div>
-              <div className="w-full h-2 bg-teal-950/70 rounded-full overflow-hidden border border-teal-800/40">
-                <div
-                  className="h-full bg-emerald-400 rounded-full transition-all duration-500 shadow-xs shadow-emerald-400"
-                  style={{ width: `${getPct(hadirCount)}%` }}
-                />
-              </div>
-            </div>
+      {/* Grafik Kehadiran Harian & Sepekan */}
+      <div className="bg-[#083834]/60 backdrop-blur-xl p-5 rounded-2xl border border-teal-500/25 shadow-lg space-y-4">
+        <div className="flex items-center justify-between gap-2">
+          <h4 className="font-black text-white text-[11px] uppercase tracking-widest flex items-center font-['Outfit']">
+            <BarChart3 className="text-emerald-400 mr-2 w-4 h-4" /> Rekap Kehadiran
+          </h4>
+          <span className="text-[10px] font-bold text-teal-200/80 tabular-nums whitespace-nowrap">
+            {selectedAttendanceDayInfo.isToday ? 'Hari Ini' : selectedAttendanceDayInfo.shortLabel} · {selectedAttendanceStat.total} data
+          </span>
+        </div>
 
-            <div>
-              <div className="flex justify-between text-[10px] font-bold text-teal-200/80 mb-1">
-                <span className="uppercase">Sakit / Izin</span>
-                <span>
-                  {sakitIzinCount} ({getPct(sakitIzinCount)}%)
-                </span>
-              </div>
-              <div className="w-full h-2 bg-teal-950/70 rounded-full overflow-hidden border border-teal-800/40">
-                <div
-                  className="h-full bg-amber-400 rounded-full transition-all duration-500"
-                  style={{ width: `${getPct(sakitIzinCount)}%` }}
-                />
-              </div>
-            </div>
-
-            <div>
-              <div className="flex justify-between text-[10px] font-bold text-teal-200/80 mb-1">
-                <span className="uppercase">Tanpa Keterangan (Alpa)</span>
-                <span>
-                  {alpaCount} ({getPct(alpaCount)}%)
-                </span>
-              </div>
-              <div className="w-full h-2 bg-teal-950/70 rounded-full overflow-hidden border border-teal-800/40">
-                <div
-                  className="h-full bg-rose-400 rounded-full transition-all duration-500"
-                  style={{ width: `${getPct(alpaCount)}%` }}
-                />
-              </div>
+        {/* Grafik Harian Sepekan */}
+        <div className="bg-[#042422]/70 border border-teal-500/20 rounded-xl p-3 space-y-2">
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-[10px] font-bold text-teal-200/80 font-['Outfit']">
+              Grafik Harian Sepekan
+            </span>
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                onClick={() => {
+                  const nextOffset = attendanceWeekOffset - 1;
+                  setAttendanceWeekOffset(nextOffset);
+                  const nextDays = buildWeekDays(todayStr, nextOffset);
+                  setAttendanceSelectedDate(nextDays[6].dateStr);
+                }}
+                className="p-1 rounded-lg bg-[#073330] hover:bg-teal-800/70 border border-teal-500/25 text-teal-200 transition-colors"
+                title="Pekan sebelumnya"
+              >
+                <ChevronLeft className="w-3.5 h-3.5" />
+              </button>
+              <button
+                type="button"
+                disabled={attendanceWeekOffset >= 0}
+                onClick={() => {
+                  const nextOffset = Math.min(0, attendanceWeekOffset + 1);
+                  setAttendanceWeekOffset(nextOffset);
+                  const nextDays = buildWeekDays(todayStr, nextOffset);
+                  setAttendanceSelectedDate(nextOffset === 0 ? todayStr : nextDays[6].dateStr);
+                }}
+                className="p-1 rounded-lg bg-[#073330] hover:bg-teal-800/70 disabled:opacity-35 disabled:pointer-events-none border border-teal-500/25 text-teal-200 transition-colors"
+                title="Pekan berikutnya"
+              >
+                <ChevronRight className="w-3.5 h-3.5" />
+              </button>
             </div>
           </div>
-        )}
+
+          <div className="grid grid-cols-7 gap-1.5 items-end pt-1">
+            {attendanceWeekDays.map((day) => {
+              const isSelected = day.dateStr === attendanceSelectedDate;
+              const totalHeightPct =
+                day.total === 0 ? 0 : Math.max(18, Math.round((day.total / maxAttendanceWeek) * 100));
+              const hadirShare = day.total === 0 ? 0 : (day.hadir / day.total) * 100;
+              const izinShare = day.total === 0 ? 0 : (day.sakitIzin / day.total) * 100;
+              const alpaShare = day.total === 0 ? 0 : Math.max(0, 100 - hadirShare - izinShare);
+
+              return (
+                <button
+                  key={day.dateStr}
+                  type="button"
+                  onClick={() => setAttendanceSelectedDate(day.dateStr)}
+                  className={`flex flex-col items-center rounded-xl py-1.5 px-1 transition-all border ${
+                    isSelected
+                      ? 'bg-emerald-500/20 border-emerald-400/50 shadow-sm'
+                      : 'bg-transparent border-transparent hover:bg-teal-900/40'
+                  }`}
+                  title={`${day.fullLabel}: Hadir ${day.hadir}, Sakit/Izin ${day.sakitIzin}, Alpa ${day.alpa}`}
+                >
+                  <span
+                    className={`text-[10px] font-black tabular-nums mb-1 font-['Outfit'] ${
+                      isSelected ? 'text-emerald-300' : day.total > 0 ? 'text-white' : 'text-teal-200/40'
+                    }`}
+                  >
+                    {day.total}
+                  </span>
+                  <div className="w-full max-w-[20px] h-12 bg-teal-950/80 rounded-md overflow-hidden flex items-end border border-teal-800/40">
+                    {day.total > 0 && (
+                      <div
+                        className="w-full flex flex-col justify-end rounded-t-sm overflow-hidden transition-all duration-300"
+                        style={{ height: `${totalHeightPct}%` }}
+                      >
+                        {alpaShare > 0 && <div className="w-full bg-rose-400" style={{ height: `${alpaShare}%` }} />}
+                        {izinShare > 0 && <div className="w-full bg-amber-400" style={{ height: `${izinShare}%` }} />}
+                        {hadirShare > 0 && <div className="w-full bg-emerald-400" style={{ height: `${hadirShare}%` }} />}
+                      </div>
+                    )}
+                  </div>
+                  <span
+                    className={`text-[9px] font-extrabold mt-1 leading-none whitespace-nowrap ${
+                      isSelected ? 'text-emerald-300' : 'text-teal-200/75'
+                    }`}
+                  >
+                    {day.shortDay}
+                  </span>
+                  <span
+                    className={`text-[8px] tabular-nums mt-0.5 leading-none ${
+                      isSelected ? 'text-white font-bold' : 'text-teal-200/50'
+                    }`}
+                  >
+                    {day.dayNum}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Rekapan Hari Terpilih */}
+        <div className="space-y-3">
+          <div>
+            <div className="flex justify-between text-[10px] font-bold text-teal-200/80 mb-1 tabular-nums">
+              <span className="uppercase">Hadir</span>
+              <span>
+                {selectedAttendanceStat.hadir} ({getAttendancePct(selectedAttendanceStat.hadir)}%)
+              </span>
+            </div>
+            <div className="w-full h-2 bg-teal-950/70 rounded-full overflow-hidden border border-teal-800/40">
+              <div
+                className="h-full bg-emerald-400 rounded-full transition-all duration-500 shadow-xs shadow-emerald-400"
+                style={{ width: `${getAttendancePct(selectedAttendanceStat.hadir)}%` }}
+              />
+            </div>
+          </div>
+
+          <div>
+            <div className="flex justify-between text-[10px] font-bold text-teal-200/80 mb-1 tabular-nums">
+              <span className="uppercase">Sakit / Izin</span>
+              <span>
+                {selectedAttendanceStat.sakitIzin} ({getAttendancePct(selectedAttendanceStat.sakitIzin)}%)
+              </span>
+            </div>
+            <div className="w-full h-2 bg-teal-950/70 rounded-full overflow-hidden border border-teal-800/40">
+              <div
+                className="h-full bg-amber-400 rounded-full transition-all duration-500"
+                style={{ width: `${getAttendancePct(selectedAttendanceStat.sakitIzin)}%` }}
+              />
+            </div>
+          </div>
+
+          <div>
+            <div className="flex justify-between text-[10px] font-bold text-teal-200/80 mb-1 tabular-nums">
+              <span className="uppercase">Tanpa Keterangan (Alpa)</span>
+              <span>
+                {selectedAttendanceStat.alpa} ({getAttendancePct(selectedAttendanceStat.alpa)}%)
+              </span>
+            </div>
+            <div className="w-full h-2 bg-teal-950/70 rounded-full overflow-hidden border border-teal-800/40">
+              <div
+                className="h-full bg-rose-400 rounded-full transition-all duration-500"
+                style={{ width: `${getAttendancePct(selectedAttendanceStat.alpa)}%` }}
+              />
+            </div>
+          </div>
+
+          {selectedAttendanceStat.total === 0 && (
+            <p className="text-[10px] italic text-teal-200/55 pt-0.5">
+              Belum ada data absensi pada {selectedAttendanceDayInfo.fullLabel}.
+            </p>
+          )}
+        </div>
       </div>
 
       {/* Top Hafalan */}
@@ -599,7 +987,7 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
         </button>
       </div>
 
-      {/* Grafik Pembayaran Terakhir (Keseluruhan Data Hadir: Sudah Bayar vs Belum Bayar) */}
+      {/* Grafik Pembayaran Terakhir (Harian & Sepekan: Hadir Sudah Bayar vs Belum Bayar) */}
       {isAdmin && (() => {
         const radius = 44;
         const circumference = 2 * Math.PI * radius;
@@ -609,24 +997,126 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
           totalHadirPembayaran > 0 ? (hadirBelumBayar.length / totalHadirPembayaran) * circumference : 0;
 
         return (
-          <div className="bg-[#083834]/60 backdrop-blur-xl p-5 rounded-2xl border border-teal-500/25 shadow-lg relative overflow-hidden">
-            <div className="flex items-center justify-between mb-4">
+          <div className="bg-[#083834]/60 backdrop-blur-xl p-5 rounded-2xl border border-teal-500/25 shadow-lg relative overflow-hidden space-y-4">
+            <div className="flex items-center justify-between gap-2">
               <h4 className="font-black text-white text-[11px] uppercase tracking-widest flex items-center font-['Outfit']">
                 <Wallet className="text-emerald-400 mr-2 w-4 h-4" /> Pembayaran Terakhir
               </h4>
-              <span className="text-[9.5px] font-bold text-teal-200/70 bg-[#042422] border border-teal-500/25 px-2.5 py-1 rounded-lg font-['Outfit']">
-                Total Hadir: {totalHadirPembayaran}
+              <span className="text-[10px] font-bold text-teal-200/80 tabular-nums whitespace-nowrap">
+                {selectedPaymentDayInfo.isToday ? 'Hari Ini' : selectedPaymentDayInfo.shortLabel} · Hadir {totalHadirPembayaran}
               </span>
             </div>
 
+            {/* Grafik Harian Sepekan */}
+            <div className="bg-[#042422]/70 border border-teal-500/20 rounded-xl p-3 space-y-2">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-[10px] font-bold text-teal-200/80 font-['Outfit']">
+                  Grafik Harian Sepekan
+                </span>
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const nextOffset = paymentWeekOffset - 1;
+                      setPaymentWeekOffset(nextOffset);
+                      const nextDays = buildWeekDays(todayStr, nextOffset);
+                      setPaymentSelectedDate(nextDays[6].dateStr);
+                    }}
+                    className="p-1 rounded-lg bg-[#073330] hover:bg-teal-800/70 border border-teal-500/25 text-teal-200 transition-colors"
+                    title="Pekan sebelumnya"
+                  >
+                    <ChevronLeft className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    disabled={paymentWeekOffset >= 0}
+                    onClick={() => {
+                      const nextOffset = Math.min(0, paymentWeekOffset + 1);
+                      setPaymentWeekOffset(nextOffset);
+                      const nextDays = buildWeekDays(todayStr, nextOffset);
+                      setPaymentSelectedDate(nextOffset === 0 ? todayStr : nextDays[6].dateStr);
+                    }}
+                    className="p-1 rounded-lg bg-[#073330] hover:bg-teal-800/70 disabled:opacity-35 disabled:pointer-events-none border border-teal-500/25 text-teal-200 transition-colors"
+                    title="Pekan berikutnya"
+                  >
+                    <ChevronRight className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-7 gap-1.5 items-end pt-1">
+                {paymentWeekDays.map((day) => {
+                  const isSelected = day.dateStr === paymentSelectedDate;
+                  const totalHeightPct =
+                    day.total === 0 ? 0 : Math.max(18, Math.round((day.total / maxPaymentWeek) * 100));
+                  const paidShare = day.total === 0 ? 0 : (day.paid / day.total) * 100;
+                  const unpaidShare = day.total === 0 ? 0 : Math.max(0, 100 - paidShare);
+
+                  return (
+                    <button
+                      key={day.dateStr}
+                      type="button"
+                      onClick={() => setPaymentSelectedDate(day.dateStr)}
+                      className={`flex flex-col items-center rounded-xl py-1.5 px-1 transition-all border ${
+                        isSelected
+                          ? 'bg-emerald-500/20 border-emerald-400/50 shadow-sm'
+                          : 'bg-transparent border-transparent hover:bg-teal-900/40'
+                      }`}
+                      title={`${day.fullLabel}: Sudah Bayar ${day.paid}, Belum Bayar ${day.unpaid}`}
+                    >
+                      <span
+                        className={`text-[10px] font-black tabular-nums mb-1 font-['Outfit'] ${
+                          isSelected ? 'text-emerald-300' : day.total > 0 ? 'text-white' : 'text-teal-200/40'
+                        }`}
+                      >
+                        {day.total}
+                      </span>
+                      <div className="w-full max-w-[20px] h-12 bg-teal-950/80 rounded-md overflow-hidden flex items-end border border-teal-800/40">
+                        {day.total > 0 && (
+                          <div
+                            className="w-full flex flex-col justify-end rounded-t-sm overflow-hidden transition-all duration-300"
+                            style={{ height: `${totalHeightPct}%` }}
+                          >
+                            {unpaidShare > 0 && (
+                              <div className="w-full bg-rose-400" style={{ height: `${unpaidShare}%` }} />
+                            )}
+                            {paidShare > 0 && (
+                              <div className="w-full bg-emerald-400" style={{ height: `${paidShare}%` }} />
+                            )}
+                          </div>
+                        )}
+                      </div>
+                      <span
+                        className={`text-[9px] font-extrabold mt-1 leading-none whitespace-nowrap ${
+                          isSelected ? 'text-emerald-300' : 'text-teal-200/75'
+                        }`}
+                      >
+                        {day.shortDay}
+                      </span>
+                      <span
+                        className={`text-[8px] tabular-nums mt-0.5 leading-none ${
+                          isSelected ? 'text-white font-bold' : 'text-teal-200/50'
+                        }`}
+                      >
+                        {day.dayNum}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
             {totalHadirPembayaran === 0 ? (
-              <div className="py-6 text-center rounded-2xl bg-[#042422]/60 border border-teal-500/15 mb-4">
-                <p className="text-[11px] font-semibold text-teal-200/60">
-                  Belum ada data kehadiran santri untuk ditampilkan dalam grafik.
+              <div className="py-5 px-3 text-center rounded-2xl bg-[#042422]/60 border border-teal-500/15">
+                <p className="text-[11px] font-semibold text-teal-200/65">
+                  Belum ada data santri hadir pada {selectedPaymentDayInfo.fullLabel}.
+                </p>
+                <p className="text-[10px] text-teal-200/45 mt-1 tabular-nums">
+                  Hadir &amp; Sudah Bayar: 0 · Hadir &amp; Belum Bayar: 0
                 </p>
               </div>
             ) : (
-              <div className="space-y-4 mb-4">
+              <div className="space-y-4">
                 <div className="flex items-center gap-4 bg-[#042422]/65 border border-teal-500/20 rounded-2xl p-4">
                   {/* Donut Chart */}
                   <div className="relative w-28 h-28 shrink-0 flex items-center justify-center">
@@ -667,7 +1157,7 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
                       )}
                     </svg>
                     <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
-                      <span className="text-xl font-black text-white leading-none font-['Outfit']">
+                      <span className="text-xl font-black text-white leading-none font-['Outfit'] tabular-nums">
                         {totalHadirPembayaran}
                       </span>
                       <span className="text-[8.5px] font-extrabold uppercase tracking-wider text-teal-200/70 mt-1">
@@ -686,11 +1176,11 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
                             Hadir • Sudah Bayar
                           </span>
                         </div>
-                        <span className="text-[10px] font-black text-emerald-300 font-['Outfit'] shrink-0">
+                        <span className="text-[10px] font-black text-emerald-300 font-['Outfit'] tabular-nums shrink-0">
                           {pctSudahBayar}%
                         </span>
                       </div>
-                      <p className="text-lg font-black text-white mt-0.5 pl-4 font-['Outfit']">
+                      <p className="text-lg font-black text-white mt-0.5 pl-4 font-['Outfit'] tabular-nums">
                         {hadirSudahBayar.length}{' '}
                         <span className="text-[10px] font-semibold text-teal-200/70">data</span>
                       </p>
@@ -704,11 +1194,11 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
                             Hadir • Belum Bayar
                           </span>
                         </div>
-                        <span className="text-[10px] font-black text-rose-300 font-['Outfit'] shrink-0">
+                        <span className="text-[10px] font-black text-rose-300 font-['Outfit'] tabular-nums shrink-0">
                           {pctBelumBayar}%
                         </span>
                       </div>
-                      <p className="text-lg font-black text-white mt-0.5 pl-4 font-['Outfit']">
+                      <p className="text-lg font-black text-white mt-0.5 pl-4 font-['Outfit'] tabular-nums">
                         {hadirBelumBayar.length}{' '}
                         <span className="text-[10px] font-semibold text-teal-200/70">data</span>
                       </p>
@@ -895,7 +1385,9 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
                     Data Kehadiran &amp; Pembayaran
                   </h3>
                   <p className="text-[10px] text-teal-200/70 font-semibold">
-                    Santri hadir yang sudah bayar &amp; belum bayar
+                    {selectedPaymentDayInfo.isToday
+                      ? `Hari Ini · ${selectedPaymentDayInfo.fullLabel}`
+                      : selectedPaymentDayInfo.fullLabel}
                   </p>
                 </div>
               </div>
