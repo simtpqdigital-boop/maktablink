@@ -70,3 +70,25 @@ body {
 .scanner-laser-line {
   animation: scanLineAnimation 2.2s ease-in-out infinite;
 }
+
+@keyframes barGrowUp {
+  0% {
+    transform: scaleY(0);
+    opacity: 0.25;
+  }
+  100% {
+    transform: scaleY(1);
+    opacity: 1;
+  }
+}
+
+.animate-bar-grow {
+  transform-origin: bottom;
+  animation: barGrowUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-bar-grow {
+    animation: none;
+  }
+}
